@@ -1,0 +1,142 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="box">
+<h2>Furnace / Heat Pump Quote Tool</h2>
+
+<form method="POST">
+    Equipment Cost:
+    <input name="equipment">
+
+Model Number:
+<input name="model"><br><br>
+
+    Pipe/Linesest Length (ft):
+    <input name="pipe">
+
+    Slim Duct Length (ft):
+<input name="slim_duct"><br><br>
+
+    Thermostat:
+<select name="thermostat">
+    <option value="0">None ($0)</option>
+    <option value="189">Honeywell P200 ($189)</option>
+    <option value="550">Amana Smart Stat ($550)</option>
+    <option value="425">Tekmar 564 ($425)</option>
+</select><br><br>
+
+    Outdoor Temp Sensor:
+<select name="sensor">
+    <option value="0">No ($0)</option>
+    <option value="75">Yes ($75)</option>
+</select><br><br>
+
+    Acid Neutralizer / Pump:
+<select name="neutralizer">
+    <option value="0">None ($0)</option>
+    <option value="85">CS2 Neutralizer ($85)</option>
+    <option value="270">Neutralizer Pump ($270)</option>
+    <option value="150">Basic Pump ($150)</option>
+</select><br><br>
+
+    Heat Pump Pad:
+<select name="pad">
+    <option value="0">No ($0)</option>
+    <option value="125">Yes ($125)</option>
+</select><br><br>
+
+    Difficulty:
+    <select name="difficulty">
+        <option value="1">Easy</option>
+        <option value="1.25">Medium</option>
+        <option value="1.5">Hard</option>
+    </select>
+
+    Electrical For Heat Pump:
+    <input name="electrical">
+
+    Additional Materials:
+    <input name="additional">
+
+    Heat Loss:
+<select name="heat_loss">
+    <option value="0">No ($0)</option>
+    <option value="325">Yes ($325)</option>
+</select><br><br>
+
+    <button type="submit">Calculate</button>
+</form>
+</div>
+
+{% if result %}
+<div class="box">
+<h3>Breakdown</h3>
+
+<strong>Model:</strong> {{ result.model }}<br>
+Materials: ${{result.materials}}<br>
+    Thermostat: ${{ "{:,.2f}".format(result.thermostat) }}<br>
+Outdoor Sensor: ${{ "{:,.2f}".format(result.sensor) }}<br>
+Neutralizer/Pump: ${{ "{:,.2f}".format(result.neutralizer) }}<br>
+Heat Pump Pad: ${{ "{:,.2f}".format(result.pad) }}<br>
+Heat Loss: ${{ "{:,.2f}".format(result.heat_loss) }}<br>
+Freight: ${{result.freight}}<br>
+Permit: ${{result.permit}}<br>
+Pipe/Lineset Cost: ${{result.pipe_cost}}<br>
+    Slim Duct: ${{ "{:,.2f}".format(result.slim_duct_cost) }}<br>
+Labour: ${{result.labour}}<br>
+Commission (7%): ${{ "{:,.2f}".format(result.commission) }}<br>
+<hr>
+
+Subtotal: ${{ "{:,.2f}".format(result.subtotal) }}<br>
+Commission Added: ${{ "{:,.2f}".format(result.commission) }}<br>
+
+<hr>
+
+Pre-Tax Total: ${{ "{:,.2f}".format(result.subtotal_with_commission) }}<br>
+Tax (5%): ${{ "{:,.2f}".format(result.tax) }}<br>
+
+<strong>Total: ${{ "{:,.2f}".format(result.total) }}</strong>
+</div>
+
+
+    <div class="box">
+<h3>Customer Quote</h3>
+
+<p>
+<strong>{{ result.model }}</strong><br>
+With All Labor and Materials to Suit
+</p>
+
+<br>
+
+Subtotal: ${{ "{:,.2f}".format(result.subtotal_with_commission) }}<br>
+Tax (5%): ${{ "{:,.2f}".format(result.tax) }}<br>
+
+<hr>
+
+<strong>Total: ${{ "{:,.2f}".format(result.total) }}</strong>
+
+</div>
+
+    <style>
+.quote-box {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-top: 20px;
+    font-size: 18px;
+}
+</style>
+
+    <div class="quote-box">
+
+    <p>
+{{ result.model }} - With All Labor and Materials to Suit
+</p>
+
+
+
+{% endif %}
+
+{% endblock %}

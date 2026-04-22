@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h2>Heat Pump Tool</h2>
+
+<form method="POST">
+    Equipment Cost:
+    <input name="equipment"><br><br>
+
+    Lineset Length:
+    <input name="pipe"><br><br>
+
+    <button type="submit">Calculate</button>
+</form>
+
+{% if result %}
+    <h3>Total: {{ result.total }}</h3>
+{% endif %}
+
+{% endblock %}
