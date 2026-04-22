@@ -1,12 +1,6 @@
 from flask import Flask, render_template, request
 
-import os
-
-app = Flask(
-    __name__,
-    template_folder=os.path.join(os.path.dirname(__file__), "templates"),
-    static_folder=os.path.join(os.path.dirname(__file__), "static")
-)
+app = Flask(__name__)
 
 def calculate(data):
     equipment = float(data.get("equipment", 0))
@@ -21,10 +15,15 @@ def calculate(data):
     neutralizer = float(data.get("neutralizer") or 0)
     pad = float(data.get("pad") or 0)
     heat_loss = float(data.get("heat_loss") or 0)
-    permit = float(data.get("permit") or 0)
+    customer = data.get("customer", "")
+    address = data.get("address", "")
+    phone = data.get("phone", "")
+    email = data.get("email", "")
+    date = data.get("date", "")
 
     materials = (equipment * 1.12) + 1000
     freight = 100
+    permit = 200
     pipe_cost = pipe * 6
     labour = 1800 * difficulty
     SLIM_DUCT_RATE = 8
@@ -33,7 +32,7 @@ def calculate(data):
     subtotal = (
             equipment + materials + freight + permit +
             pipe_cost + slim_duct_cost + labour + electrical + additional +
-            thermostat + sensor + neutralizer + pad + heat_loss + permit
+            thermostat + sensor + neutralizer + pad + heat_loss
     )
 
     TAX_RATE = 0.05
@@ -46,6 +45,11 @@ def calculate(data):
     total = subtotal_with_commission + tax
 
     return {
+        "customer": customer,
+        "address": address,
+        "phone": phone,
+        "email": email,
+        "date": date,
         "model": model,
         "materials": materials,
         "freight": freight,
@@ -58,7 +62,6 @@ def calculate(data):
         "neutralizer": neutralizer,
         "pad": pad,
         "heat_loss": heat_loss,
-        "permit": permit,
         "subtotal": subtotal,
         "commission": commission,
         "subtotal_with_commission": subtotal_with_commission,
@@ -73,12 +76,11 @@ def furnace():
         result = calculate(request.form)
     return render_template("furnace.html", result=result)
 
-@app.route("/heatpump", methods=["GET", "POST"])
-def heatpump():
-    result = None
-    if request.method == "POST":
-        result = calculate(request.form)
-    return render_template("heatpump.html", result=result)
+@app.route("/quote", methods=["POST"])
+def quote():
+    result = calculate(request.form)
+    return render_template("quote.html", result=result)
+
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
