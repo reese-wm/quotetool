@@ -1,6 +1,12 @@
 from flask import Flask, render_template, request
 
-app = Flask(__name__)
+import os
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(os.path.dirname(__file__), "templates"),
+    static_folder=os.path.join(os.path.dirname(__file__), "static")
+)
 
 def calculate(data):
     equipment = float(data.get("equipment", 0))
