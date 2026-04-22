@@ -21,10 +21,10 @@ def calculate(data):
     neutralizer = float(data.get("neutralizer") or 0)
     pad = float(data.get("pad") or 0)
     heat_loss = float(data.get("heat_loss") or 0)
+    permit = float(data.get("permit") or 0)
 
     materials = (equipment * 1.12) + 1000
     freight = 100
-    permit = 200
     pipe_cost = pipe * 6
     labour = 1800 * difficulty
     SLIM_DUCT_RATE = 8
@@ -33,7 +33,7 @@ def calculate(data):
     subtotal = (
             equipment + materials + freight + permit +
             pipe_cost + slim_duct_cost + labour + electrical + additional +
-            thermostat + sensor + neutralizer + pad + heat_loss
+            thermostat + sensor + neutralizer + pad + heat_loss + permit
     )
 
     TAX_RATE = 0.05
@@ -58,6 +58,7 @@ def calculate(data):
         "neutralizer": neutralizer,
         "pad": pad,
         "heat_loss": heat_loss,
+        "permit": permit,
         "subtotal": subtotal,
         "commission": commission,
         "subtotal_with_commission": subtotal_with_commission,
