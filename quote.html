@@ -1,0 +1,91 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<style>
+.quote-container {
+    background: white;
+    padding: 30px;
+    width: 800px;
+    margin: auto;
+    font-size: 14px;
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.line {
+    border-bottom: 1px solid black;
+    margin-bottom: 10px;
+}
+
+.section {
+    margin-top: 20px;
+}
+
+.total-box {
+    margin-top: 20px;
+    text-align: right;
+}
+
+</style>
+
+<div class="quote-container">
+
+<h2>QUOTE</h2>
+
+<div class="header-row">
+    <div>
+        <strong>{{ result.customer }}</strong><br>
+        {{ result.address }}<br>
+        {{ result.email }}
+    </div>
+    <div>
+        Date: {{ result.date }}<br>
+        Phone: {{ result.phone }}
+</div>
+
+<div class="section">
+    <table width="100%">
+        <tr>
+            <th align="left">DESCRIPTION</th>
+            <th>AMOUNT</th>
+        </tr>
+        <tr>
+            <td>
+                {{ result.model }} - With All Labor and Materials to Suit
+            </td>
+            <td align="right">
+                ${{ "{:,.2f}".format(result.subtotal_with_commission) }}
+            </td>
+        </tr>
+    </table>
+</div>
+    <p>{{ result.notes }}</p>
+
+<div class="total-box">
+    Subtotal: ${{ "{:,.2f}".format(result.subtotal_with_commission) }}<br>
+    GST (5%): ${{ "{:,.2f}".format(result.tax) }}<br>
+    <strong>Total: ${{ "{:,.2f}".format(result.total) }}</strong>
+</div>
+
+<div class="section">
+    <p>
+    All installations include complete system set up with all materials, labour and permit to suit your installation.
+    </p>
+
+    <p>
+    A 50% deposit + GST is required upon acceptance. Balance due upon completion.
+    </p>
+</div>
+
+<div class="section">
+    _______________________________<br>
+    Authorized Signature
+</div>
+
+</div>
+
+{% endblock %}
