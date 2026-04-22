@@ -22,7 +22,7 @@ def calculate(data):
     pad = float(data.get("pad") or 0)
     heat_loss = float(data.get("heat_loss") or 0)
 
-    materials = (equipment * 0.12) + 1000
+    materials = (equipment * 1.12) + 1000
     freight = 100
     permit = 200
     pipe_cost = pipe * 6
