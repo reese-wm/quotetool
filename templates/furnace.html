@@ -1,11 +1,27 @@
 {% extends "layout.html" %}
 
 {% block content %}
-
 <div class="box">
-<h2>Furnace / Heat Pump Quote Tool</h2>
+<h2>Customer Information</h2>
 
-<form method="POST">
+Customer Name:
+<input name="customer"><br><br>
+
+Job Site Address:
+<input name="address"><br><br>
+
+Phone Number:
+<input name="phone"><br><br>
+
+Email:
+<input name="email"><br><br>
+
+Date:
+<input name="date" type="date"><br><br>
+
+</div>
+
+<form method="POST" action="/quote">
     Equipment Cost:
     <input name="equipment">
 
@@ -58,13 +74,6 @@ Model Number:
 
     Additional Materials:
     <input name="additional">
-
-    Permit:
-    <select name="permit">
-    <option value="0">None ($0)</option>
-    <option value="200"> Gas or Electrical ($200)</option>
-    <option value="400"> Gas and Electrical ($400)</option>
-</select><br><br>
 
     Heat Loss:
 <select name="heat_loss">
@@ -141,8 +150,10 @@ Tax (5%): ${{ "{:,.2f}".format(result.tax) }}<br>
     <p>
 {{ result.model }} - With All Labor and Materials to Suit
 </p>
+    Job Notes:
+<textarea name="notes"></textarea><br><br>
 
-
+    </div>
 
 {% endif %}
 
