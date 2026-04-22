@@ -1,8 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
+
     <title>Big Valley Quote Tool</title>
     <style>
+        .section-title {
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
         body { font-family: Arial; background:#f4f6f8; }
         .container { width: 900px; margin: auto; }
         .header {
@@ -33,11 +45,15 @@
 </head>
 <body>
 
+
+</div>
+
 <div class="container">
 
 <div class="header">
     <img src="/static/logo.png" height="60">
 </div>
+
 
 {% block content %}{% endblock %}
 
