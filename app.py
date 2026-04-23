@@ -37,8 +37,8 @@ def calculate(data):
             thermostat + sensor + neutralizer + pad + heat_loss
     )
 
-    TAX_RATE = 0.05
-    COMMISSION_RATE = 0.07
+    TAX_RATE = 1.05
+    COMMISSION_RATE = 1.07
 
     commission = subtotal * COMMISSION_RATE
     subtotal_with_commission = subtotal + commission
