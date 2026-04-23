@@ -81,7 +81,7 @@ def furnace():
 
 @app.route("/quote", methods=["POST"])
 def quote():
-    result = calculate(request.form)
+    result = request.form.to_dict()
     return render_template("quote.html", result=result)
 
 
