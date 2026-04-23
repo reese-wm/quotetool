@@ -32,7 +32,7 @@ def calculate(data):
     slim_duct_cost = slim_duct * SLIM_DUCT_RATE
 
     subtotal = (
-            equipment + materials + freight + permit +
+            materials + freight + permit +
             pipe_cost + slim_duct_cost + labour + electrical + additional +
             thermostat + sensor + neutralizer + pad + heat_loss
     )
