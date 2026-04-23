@@ -39,7 +39,12 @@ Date:
         Date:
         <input name="date" type="date">
     </div>
-
+    
+<div class="box">
+    <h3>Job Notes</h3>
+    <textarea name="notes" rows="4" style="width:100%;"></textarea>
+</div>
+    
     Equipment Cost:
     <input name="equipment">
 
@@ -104,72 +109,33 @@ Model Number:
 </div>
 
 {% if result %}
+
+{% if result %}
+
 <div class="box">
-<h3>Breakdown</h3>
+    <h3>Breakdown</h3>
 
-<strong>Model:</strong> {{ result.model }}<br>
-Materials: ${{result.materials}}<br>
-    Thermostat: ${{ "{:,.2f}".format(result.thermostat) }}<br>
-Outdoor Sensor: ${{ "{:,.2f}".format(result.sensor) }}<br>
-Neutralizer/Pump: ${{ "{:,.2f}".format(result.neutralizer) }}<br>
-Heat Pump Pad: ${{ "{:,.2f}".format(result.pad) }}<br>
-Heat Loss: ${{ "{:,.2f}".format(result.heat_loss) }}<br>
-Freight: ${{result.freight}}<br>
-Permit: ${{result.permit}}<br>
-Pipe/Lineset Cost: ${{result.pipe_cost}}<br>
+    Materials: ${{ "{:,.2f}".format(result.materials) }}<br>
+    Labour: ${{ "{:,.2f}".format(result.labour) }}<br>
+    Pipe: ${{ "{:,.2f}".format(result.pipe_cost) }}<br>
     Slim Duct: ${{ "{:,.2f}".format(result.slim_duct_cost) }}<br>
-Labour: ${{result.labour}}<br>
-Commission (7%): ${{ "{:,.2f}".format(result.commission) }}<br>
-<hr>
 
-Subtotal: ${{ "{:,.2f}".format(result.subtotal) }}<br>
-Commission Added: ${{ "{:,.2f}".format(result.commission) }}<br>
+    <hr>
 
-<hr>
-
-Pre-Tax Total: ${{ "{:,.2f}".format(result.subtotal_with_commission) }}<br>
-Tax (5%): ${{ "{:,.2f}".format(result.tax) }}<br>
-
-<strong>Total: ${{ "{:,.2f}".format(result.total) }}</strong>
+    Subtotal: ${{ "{:,.2f}".format(result.subtotal) }}<br>
+    Commission: ${{ "{:,.2f}".format(result.commission) }}<br>
+    Total: ${{ "{:,.2f}".format(result.total) }}
 </div>
 
+<form method="POST" action="/quote">
 
-    <div class="box">
-<h3>Customer Quote</h3>
+    {% for key, value in result.items() %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+    {% endfor %}
 
-<p>
-<strong>{{ result.model }}</strong><br>
-With All Labor and Materials to Suit
-</p>
+    <button type="submit">Generate Quote</button>
 
-<br>
-
-Subtotal: ${{ "{:,.2f}".format(result.subtotal_with_commission) }}<br>
-Tax (5%): ${{ "{:,.2f}".format(result.tax) }}<br>
-
-<hr>
-
-<strong>Total: ${{ "{:,.2f}".format(result.total) }}</strong>
-
-</div>
-
-    <style>
-.quote-box {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    margin-top: 20px;
-    font-size: 18px;
-}
-</style>
-
-    <div class="quote-box">
-
-    <p>
-{{ result.model }} - With All Labor and Materials to Suit
-</p>
-    Job Notes:
-<textarea name="notes"></textarea><br><br>
+</form>
 
     </div>
 
