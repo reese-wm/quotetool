@@ -115,7 +115,12 @@ td {
                 <th>Description</th>
                 <th class="amount">Amount</th>
             </tr>
-
+            
+   <div class=notes     
+  <strong>Job Notes:</strong><br>
+    {{ result.notes }}
+    </div>
+            
             <tr>
                 <td>
                     {{ result.model }} - With All Labor and Materials to Suit
@@ -140,12 +145,8 @@ td {
    <p style="text-align: right;">PAYMENT DUE UPON RECEIPT OF INVOICE</p>
     </div>
 
-   <div class=notes     
-  <strong>Job Notes:</strong><br>
-    {{ result.notes }}
-    </div>
-    
 
+    
     <div class="signature">
         _______________________________<br>
         Authorized Signature
