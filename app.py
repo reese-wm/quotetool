@@ -79,13 +79,10 @@ def furnace():
         result = calculate(request.form)
     return render_template("furnace.html", result=result)
 
-@app.route("/quote", methods=["GET", "POST"])
+@app.route("/quote", methods=["POST"])
 def quote():
-    result = None
-    if request.method == "POST":
-        result = calculate(request.form)
+    result = request.form.to_dict()
     return render_template("quote.html", result=result)
-
 
 if __name__ == "__main__":
     app.run(debug=True)
