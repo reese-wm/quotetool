@@ -126,8 +126,8 @@ td {
     </div>
 
     <div class="totals">
-        Subtotal: ${{ "{:,.2f}".format(result.subtotal_with_commission) }}<br>
-        GST (5%): ${{ "{:,.2f}".format(result.tax) }}<br><br>
+        Subtotal: ${{ "{:,.2f}".format(result.subtotal_with_commission | float) }}<br>
+        GST (5%): ${{ "{:,.2f}".format(result.tax | float) }}<br><br>
 
         <span class="total-final">
             Total: ${{ "{:,.2f}".format(result.total | float) }}
