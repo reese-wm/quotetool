@@ -5,86 +5,153 @@
 <style>
 .quote-container {
     background: white;
+    width: 850px;
+    margin: 30px auto;
     padding: 30px;
-    width: 800px;
-    margin: auto;
-    font-size: 14px;
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+    color: black;
 }
 
-.header-row {
+.header {
     display: flex;
     justify-content: space-between;
+    margin-bottom: 20px;
 }
 
-.line {
-    border-bottom: 1px solid black;
-    margin-bottom: 10px;
+.header-left, .header-right {
+    width: 48%;
 }
 
 .section {
     margin-top: 20px;
 }
 
-.total-box {
-    margin-top: 20px;
+.line {
+    border-bottom: 1px solid #000;
+    margin: 5px 0 15px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th {
+    text-align: left;
+    border-bottom: 2px solid black;
+    padding-bottom: 5px;
+}
+
+td {
+    padding: 8px 0;
+}
+
+.amount {
     text-align: right;
 }
 
+.totals {
+    margin-top: 20px;
+    text-align: right;
+    font-size: 16px;
+}
+
+.total-final {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.notes {
+    margin-top: 30px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.signature {
+    margin-top: 50px;
+}
 </style>
 
 <div class="quote-container">
 
-<h2>QUOTE</h2>
+    <h2>QUOTE</h2>
+    <img src="{{ url_for('static', filename='logo.png') }}" style="height:60px;">
 
-<div class="header-row">
-    <div>
-        <strong>{{ result.customer }}</strong><br>
-        {{ result.address }}<br>
-        {{ result.email }}
+    <!-- HEADER -->
+    <div class="header">
+
+        <div class="header-left">
+            <strong>Name:</strong><br>
+            {{ result.customer }}<br><br>
+
+            <strong>Job Site:</strong><br>
+            {{ result.address }}<br><br>
+
+            <strong>Email:</strong><br>
+            {{ result.email }}
+        </div>
+
+        <div class="header-right">
+            <strong>Date:</strong><br>
+            {{ result.date }}<br><br>
+
+            <strong>Phone:</strong><br>
+            {{ result.phone }}
+        </div>
+
     </div>
-    <div>
-        Date: {{ result.date }}<br>
-        Phone: {{ result.phone }}
-</div>
 
-<div class="section">
-    <table width="100%">
-        <tr>
-            <th align="left">DESCRIPTION</th>
-            <th>AMOUNT</th>
-        </tr>
-        <tr>
-            <td>
-                {{ result.model }} - With All Labor and Materials to Suit
-            </td>
-            <td align="right">
-                ${{ "{:,.2f}".format(result.subtotal_with_commission) }}
-            </td>
-        </tr>
-    </table>
-</div>
-    <p>{{ result.notes }}</p>
+    <!-- DESCRIPTION TABLE -->
+    <div class="section">
+        <table>
+            <tr>
+                <th>Description</th>
+                <th class="amount">Amount</th>
+            </tr>
 
-<div class="total-box">
-    Subtotal: ${{ "{:,.2f}".format(result.subtotal_with_commission) }}<br>
-    GST (5%): ${{ "{:,.2f}".format(result.tax) }}<br>
-    <strong>Total: ${{ "{:,.2f}".format(result.total) }}</strong>
-</div>
+            <tr>
+                <td>
+                    {{ result.model }} - With All Labor and Materials to Suit
+                </td>
+                <td class="amount">
+                    ${{ "{:,.2f}".format(result.subtotal_with_commission) }}
+                </td>
+            </tr>
+        </table>
+    </div>
 
-<div class="section">
-    <p>
-    All installations include complete system set up with all materials, labour and permit to suit your installation.
-    </p>
+    <!-- TOTALS -->
+    <div class="totals">
+        Subtotal: ${{ "{:,.2f}".format(result.subtotal_with_commission) }}<br>
+        GST (5%): ${{ "{:,.2f}".format(result.tax) }}<br><br>
 
-    <p>
-    A 50% deposit + GST is required upon acceptance. Balance due upon completion.
-    </p>
-</div>
+        <span class="total-final">
+            Total: ${{ "{:,.2f}".format(result.total) }}
+        </span>
+    </div>
 
-<div class="section">
-    _______________________________<br>
-    Authorized Signature
-</div>
+    <!-- NOTES -->
+    <div class="notes">
+        <p>
+            {{ result.notes }}
+        </p>
+
+        <p>
+            All installations include complete system setup with all required materials, labour, and permits.
+        </p>
+
+        <p>
+            A 50% deposit + GST is required upon acceptance. Balance due upon completion.
+        </p>
+    </div>
+
+    <!-- SIGNATURE -->
+    <div class="signature">
+        _______________________________<br>
+        Authorized Signature
+    </div>
 
 </div>
 
