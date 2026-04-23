@@ -121,7 +121,7 @@ td {
                     {{ result.model }} - With All Labor and Materials to Suit
                 </td>
                 <td class="amount">
-                    ${{ "{:,.2f}".format(result.subtotal_with_commission) }}
+                    ${{ "{:,.2f}".format(result.subtotal_with_commission | float) }}
                 </td>
             </tr>
         </table>
