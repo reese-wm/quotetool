@@ -130,7 +130,7 @@ td {
         GST (5%): ${{ "{:,.2f}".format(result.tax) }}<br><br>
 
         <span class="total-final">
-            Total: ${{ "{:,.2f}".format(result.total) }}
+            Total: ${{ "{:,.2f}".format(result.total | float) }}
         </span>
     </div>
 
