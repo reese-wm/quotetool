@@ -3,6 +3,12 @@ from flask import Flask, render_template, request
 app = Flask(__name__)
 
 def calculate(data):
+    customer = data.get("customer", "")
+    address = data.get("address", "")
+    phone = data.get("phone", "")
+    email = data.get("email", "")
+    date = data.get("date", "")
+    notes = data.get("notes", "")
     equipment = float(data.get("equipment", 0))
     model = data.get("model", "")
     pipe = float(data.get("pipe", 0))
@@ -15,11 +21,7 @@ def calculate(data):
     neutralizer = float(data.get("neutralizer") or 0)
     pad = float(data.get("pad") or 0)
     heat_loss = float(data.get("heat_loss") or 0)
-    customer = data.get("customer", "")
-    address = data.get("address", "")
-    phone = data.get("phone", "")
-    email = data.get("email", "")
-    date = data.get("date", "")
+
 
     materials = (equipment * 1.12) + 1000
     freight = 100
@@ -50,6 +52,7 @@ def calculate(data):
         "phone": phone,
         "email": email,
         "date": date,
+        "notes": notes,
         "model": model,
         "materials": materials,
         "freight": freight,
