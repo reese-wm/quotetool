@@ -1,124 +1,211 @@
 {% extends "layout.html" %}
 
+{% block title %}Install Quote Tool{% endblock %}
+
 {% block content %}
+<div class="hero" style="margin-bottom:24px;">
+    <span class="eyebrow">Install Quotes</span>
+    <h2>Build replacement quotes with the same pricing flow you already use.</h2>
+    <p>Enter the customer, system details, and add-ons below. You'll get the pricing breakdown first, then a printable quote page.</p>
+</div>
 
-<form method="POST">
+<div class="form-layout">
+    <form method="POST" class="form-stack">
+        <section class="form-section">
+            <h3>Customer Details</h3>
+            <div class="form-grid">
+                <div>
+                    <label for="customer">Customer Name</label>
+                    <input id="customer" name="customer" value="{{ request.form.get('customer', '') }}">
+                </div>
+                <div>
+                    <label for="date">Date</label>
+                    <input id="date" name="date" type="date" value="{{ request.form.get('date', '') }}">
+                </div>
+                <div>
+                    <label for="address">Address</label>
+                    <input id="address" name="address" value="{{ request.form.get('address', '') }}">
+                </div>
+                <div>
+                    <label for="phone">Phone</label>
+                    <input id="phone" name="phone" value="{{ request.form.get('phone', '') }}">
+                </div>
+                <div class="form-grid single" style="grid-column: 1 / -1;">
+                    <div>
+                        <label for="email">Email</label>
+                        <input id="email" name="email" value="{{ request.form.get('email', '') }}">
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <div class="box">
-        Customer Name:
-        <input name="customer">
+        <section class="form-section">
+            <h3>Estimator Details</h3>
+            <div class="form-grid">
+                <div>
+                    <label for="estimator_name">Estimator Name</label>
+                    <input id="estimator_name" name="estimator_name" value="{{ request.form.get('estimator_name', '') }}">
+                </div>
+                <div>
+                    <label for="estimator_email">Estimator Email</label>
+                    <input id="estimator_email" name="estimator_email" value="{{ request.form.get('estimator_email', '') }}">
+                </div>
+            </div>
+        </section>
 
-        Address:
-        <input name="address">
+        <section class="form-section">
+            <h3>Equipment & Site Scope</h3>
+            <div class="form-grid">
+                <div>
+                    <label for="equipment">Equipment Cost</label>
+                    <input id="equipment" name="equipment" inputmode="decimal" value="{{ request.form.get('equipment', '') }}">
+                </div>
+                <div>
+                    <label for="model">Model Number</label>
+                    <input id="model" name="model" value="{{ request.form.get('model', '') }}">
+                </div>
+                <div>
+                    <label for="pipe">Pipe Length (ft)</label>
+                    <input id="pipe" name="pipe" inputmode="decimal" value="{{ request.form.get('pipe', '') }}">
+                </div>
+                <div>
+                    <label for="lineset">Lineset Length (ft)</label>
+                    <input id="lineset" name="lineset" inputmode="decimal" value="{{ request.form.get('lineset', '') }}">
+                </div>
+                <div>
+                    <label for="slim_duct">Slim Duct Length (ft)</label>
+                    <input id="slim_duct" name="slim_duct" inputmode="decimal" value="{{ request.form.get('slim_duct', '') }}">
+                </div>
+                <div>
+                    <label for="difficulty">Difficulty</label>
+                    <select id="difficulty" name="difficulty">
+                        <option value="1" {% if request.form.get('difficulty') == '1' %}selected{% endif %}>Easy</option>
+                        <option value="1.25" {% if request.form.get('difficulty') == '1.25' %}selected{% endif %}>Medium</option>
+                        <option value="1.5" {% if request.form.get('difficulty') == '1.5' %}selected{% endif %}>Hard</option>
+                        <option value="2" {% if request.form.get('difficulty') == '2' %}selected{% endif %}>2 Days</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="electrical">Electrical for Heat Pump</label>
+                    <input id="electrical" name="electrical" inputmode="decimal" value="{{ request.form.get('electrical', '') }}">
+                </div>
+                <div>
+                    <label for="additional">Additional Materials</label>
+                    <input id="additional" name="additional" inputmode="decimal" value="{{ request.form.get('additional', '') }}">
+                </div>
+                <div>
+                    <label for="heat_loss">Heat Loss</label>
+                    <select id="heat_loss" name="heat_loss">
+                        <option value="0" {% if request.form.get('heat_loss', '0') == '0' %}selected{% endif %}>No ($0)</option>
+                        <option value="325" {% if request.form.get('heat_loss') == '325' %}selected{% endif %}>Yes ($325)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
 
-        Phone:
-        <input name="phone">
+        <section class="form-section">
+            <h3>Accessories</h3>
+            <div class="form-grid">
+                <div>
+                    <label for="thermostat">Thermostat</label>
+                    <select id="thermostat" name="thermostat">
+                        <option value="0" {% if request.form.get('thermostat', '0') == '0' %}selected{% endif %}>None ($0)</option>
+                        <option value="189" {% if request.form.get('thermostat') == '189' %}selected{% endif %}>Honeywell P200 ($189)</option>
+                        <option value="550" {% if request.form.get('thermostat') == '550' %}selected{% endif %}>Amana Smart Stat ($550)</option>
+                        <option value="425" {% if request.form.get('thermostat') == '425' %}selected{% endif %}>Tekmar 564 ($425)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="sensor">Outdoor Temp Sensor</label>
+                    <select id="sensor" name="sensor">
+                        <option value="0" {% if request.form.get('sensor', '0') == '0' %}selected{% endif %}>No ($0)</option>
+                        <option value="75" {% if request.form.get('sensor') == '75' %}selected{% endif %}>Yes ($75)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="neutralizer">Acid Neutralizer / Pump</label>
+                    <select id="neutralizer" name="neutralizer">
+                        <option value="0" {% if request.form.get('neutralizer', '0') == '0' %}selected{% endif %}>None ($0)</option>
+                        <option value="85" {% if request.form.get('neutralizer') == '85' %}selected{% endif %}>CS2 Neutralizer ($85)</option>
+                        <option value="270" {% if request.form.get('neutralizer') == '270' %}selected{% endif %}>Neutralizer Pump ($270)</option>
+                        <option value="150" {% if request.form.get('neutralizer') == '150' %}selected{% endif %}>Basic Pump ($150)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="pad">Heat Pump Pad</label>
+                    <select id="pad" name="pad">
+                        <option value="0" {% if request.form.get('pad', '0') == '0' %}selected{% endif %}>No ($0)</option>
+                        <option value="125" {% if request.form.get('pad') == '125' %}selected{% endif %}>Yes ($125)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
 
-        Email:
-        <input name="email">
+        <section class="form-section">
+            <h3>Job Notes</h3>
+            <div class="form-grid single">
+                <div>
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" name="notes">{{ request.form.get('notes', '') }}</textarea>
+                </div>
+            </div>
+        </section>
 
-        Date:
-        <input name="date" type="date">
+        <button type="submit">Calculate Install Quote</button>
+    </form>
+
+    <div class="form-stack">
+        <aside class="sidebar-card">
+            <h3>How this flow works</h3>
+            <p>This version keeps your existing install quote math and adds a cleaner layout for office or tablet use.</p>
+            <ul>
+                <li>Fill in the form and calculate the quote first.</li>
+                <li>Review the pricing breakdown on the right.</li>
+                <li>Generate the customer-facing quote when it looks right.</li>
+            </ul>
+        </aside>
+
+        {% if result %}
+        <section class="result-card">
+            <h3>Quote Breakdown</h3>
+            <div class="summary-grid" style="grid-template-columns:1fr 1fr; margin-top:0;">
+                <div class="summary-tile">
+                    <h4>Materials</h4>
+                    <div class="money">${{ "{:,.2f}".format(result.materials) }}</div>
+                </div>
+                <div class="summary-tile">
+                    <h4>Labour</h4>
+                    <div class="money">${{ "{:,.2f}".format(result.labour) }}</div>
+                </div>
+                <div class="summary-tile">
+                    <h4>Pipe</h4>
+                    <div class="money">${{ "{:,.2f}".format(result.pipe_cost) }}</div>
+                </div>
+                <div class="summary-tile">
+                    <h4>Lineset</h4>
+                    <div class="money">${{ "{:,.2f}".format(result.lineset_cost) }}</div>
+                </div>
+                <div class="summary-tile">
+                    <h4>Slim Duct</h4>
+                    <div class="money">${{ "{:,.2f}".format(result.slim_duct_cost) }}</div>
+                </div>
+            </div>
+
+            <div class="totals" style="width:100%; margin-top:18px;">
+                <div class="totals-row"><span>Subtotal</span><strong>${{ "{:,.2f}".format(result.subtotal) }}</strong></div>
+                <div class="totals-row"><span>Commission</span><strong>${{ "{:,.2f}".format(result.commission) }}</strong></div>
+                <div class="totals-row final"><span>Total</span><strong>${{ "{:,.2f}".format(result.total) }}</strong></div>
+            </div>
+
+            <form method="POST" action="{{ url_for('quote') }}" style="margin-top:18px;">
+                {% for key, value in result.items() %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+                <button type="submit">Generate Customer Quote</button>
+            </form>
+        </section>
+        {% endif %}
     </div>
-    
-<div class="box">
-    <h3>Job Notes</h3>
-    <textarea name="notes" rows="4" style="width:100%;"></textarea>
 </div>
-    
-    Equipment Cost:
-    <input name="equipment">
-
-Model Number:
-<input name="model"><br><br>
-
-    Pipe/Linesest Length (ft):
-    <input name="pipe">
-
-    Slim Duct Length (ft):
-<input name="slim_duct"><br><br>
-
-    Thermostat:
-<select name="thermostat">
-    <option value="0">None ($0)</option>
-    <option value="189">Honeywell P200 ($189)</option>
-    <option value="550">Amana Smart Stat ($550)</option>
-    <option value="425">Tekmar 564 ($425)</option>
-</select><br><br>
-
-    Outdoor Temp Sensor:
-<select name="sensor">
-    <option value="0">No ($0)</option>
-    <option value="75">Yes ($75)</option>
-</select><br><br>
-
-    Acid Neutralizer / Pump:
-<select name="neutralizer">
-    <option value="0">None ($0)</option>
-    <option value="85">CS2 Neutralizer ($85)</option>
-    <option value="270">Neutralizer Pump ($270)</option>
-    <option value="150">Basic Pump ($150)</option>
-</select><br><br>
-
-    Heat Pump Pad:
-<select name="pad">
-    <option value="0">No ($0)</option>
-    <option value="125">Yes ($125)</option>
-</select><br><br>
-
-    Difficulty:
-    <select name="difficulty">
-        <option value="1">Easy</option>
-        <option value="1.25">Medium</option>
-        <option value="1.5">Hard</option>
-        <option value="2">2 Days</option>
-    </select>
-
-    Electrical For Heat Pump:
-    <input name="electrical">
-
-    Additional Materials:
-    <input name="additional">
-
-    Heat Loss:
-<select name="heat_loss">
-    <option value="0">No ($0)</option>
-    <option value="325">Yes ($325)</option>
-</select><br><br>
-
-    <button type="submit">Calculate</button>
-</form>
-</div>
-
-{% if result %}
-
-<div class="box">
-    <h3>Breakdown</h3>
-
-    Materials: ${{ "{:,.2f}".format(result.materials) }}<br>
-    Labour: ${{ "{:,.2f}".format(result.labour) }}<br>
-    Pipe: ${{ "{:,.2f}".format(result.pipe_cost) }}<br>
-    Slim Duct: ${{ "{:,.2f}".format(result.slim_duct_cost) }}<br>
-
-    <hr>
-
-    Subtotal: ${{ "{:,.2f}".format(result.subtotal) }}<br>
-    Commission: ${{ "{:,.2f}".format(result.commission) }}<br>
-    Total: ${{ "{:,.2f}".format(result.total) }}
-</div>
-
-<form method="POST" action="/quote">
-
-    {% for key, value in result.items() %}
-        <input type="hidden" name="{{ key }}" value="{{ value }}">
-    {% endfor %}
-
-    <button type="submit">Generate Quote</button>
-
-</form>
-
-    </div>
-
-{% endif %}
 
 {% endblock %}
