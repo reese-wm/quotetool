@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+
+{% block title %}Service Bill{% endblock %}
+
+{% block content %}
+<div class="print-shell">
+    <div class="print-card">
+        <div class="print-header">
+            <div class="print-title">
+                <h2>Service Bill</h2>
+                <p>{{ result.customer }}</p>
+                <p><strong>{{ company_name }}</strong></p>
+                <p>{{ company_address }}</p>
+                <p>{{ company_website }}</p>
+                <p><strong>Office Email:</strong> {{ office_email }}</p>
+            </div>
+            <div class="print-meta">
+                <p><strong>Service Date:</strong> {{ result.service_date }}</p>
+                <p><strong>Technician:</strong> {{ result.technician or "Not entered" }}</p>
+                <p><strong>Phone:</strong> {{ result.phone or "Not entered" }}</p>
+                <p><strong>Gas Contractor License:</strong> {{ gas_license }}</p>
+                <p><strong>Electrical Contractor License:</strong> {{ electrical_license }}</p>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            <div class="print-block">
+                <h4>Customer Details</h4>
+                <p><strong>Name:</strong> {{ result.customer }}</p>
+                <p><strong>Address:</strong> {{ result.address or "Not entered" }}</p>
+                <p><strong>Email:</strong> {{ result.email or "Not entered" }}</p>
+            </div>
+            <div class="print-block">
+                <h4>Payment Terms</h4>
+                <p>{{ result.payment_terms }}</p>
+            </div>
+        </div>
+
+        <div class="print-block">
+            <h4>Work Completed</h4>
+            <p>{{ result.work_completed or "No work summary entered." }}</p>
+        </div>
+
+        <div class="print-block" style="margin-top:20px;">
+            <h4>Materials / Parts Notes</h4>
+            <p>{{ result.materials_used or "No materials or part notes entered." }}</p>
+        </div>
+
+        <table>
+            <tr>
+                <th>Description</th>
+                <th class="amount">Amount</th>
+            </tr>
+            <tr>
+                <td>Call-Out Fee</td>
+                <td class="amount">${{ "{:,.2f}".format(result.callout_fee) }}</td>
+            </tr>
+            <tr>
+                <td>Labour</td>
+                <td class="amount">${{ "{:,.2f}".format(result.labour) }}</td>
+            </tr>
+            <tr>
+                <td>Parts</td>
+                <td class="amount">${{ "{:,.2f}".format(result.parts) }}</td>
+            </tr>
+            <tr>
+                <td>Miscellaneous</td>
+                <td class="amount">${{ "{:,.2f}".format(result.misc) }}</td>
+            </tr>
+        </table>
+
+        <div class="totals">
+            <div class="totals-row"><span>Subtotal</span><strong>${{ "{:,.2f}".format(result.subtotal) }}</strong></div>
+            <div class="totals-row"><span>Tax ({{ "{:,.2f}".format(result.tax_rate) }}%)</span><strong>${{ "{:,.2f}".format(result.tax) }}</strong></div>
+            <div class="totals-row final"><span>Total</span><strong>${{ "{:,.2f}".format(result.total) }}</strong></div>
+        </div>
+
+        <div class="action-row">
+            <a class="button-link" href="{{ url_for('service_quote') }}">Create Another Bill</a>
+            {% if email_links.customer %}
+            <a class="button-link" href="{{ email_links.customer }}">Email Customer</a>
+            {% endif %}
+            <a class="button-link" href="{{ email_links.office }}">Send to Office</a>
+            <button type="button" onclick="window.print()">Print Bill</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
