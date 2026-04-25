@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+
+{% block title %}Service Bill Tool{% endblock %}
+
+{% block content %}
+<div class="hero" style="margin-bottom:24px;">
+    <span class="eyebrow">Field Billing</span>
+    <h2>Give your techs a fast customer bill builder they can use on site.</h2>
+    <p>This form keeps the billing side simple: record the visit, list the work, add charges, and generate a customer-ready bill without touching your in-house invoice system.</p>
+</div>
+
+<div class="form-layout">
+    <form method="POST" class="form-stack">
+        <section class="form-section">
+            <h3>Customer & Visit</h3>
+            <div class="form-grid">
+                <div>
+                    <label for="customer">Customer Name</label>
+                    <input id="customer" name="customer" required>
+                </div>
+                <div>
+                    <label for="service_date">Service Date</label>
+                    <input id="service_date" name="service_date" type="date" required>
+                </div>
+                <div>
+                    <label for="address">Service Address</label>
+                    <input id="address" name="address">
+                </div>
+                <div>
+                    <label for="technician">Technician</label>
+                    <input id="technician" name="technician">
+                </div>
+                <div>
+                    <label for="phone">Phone</label>
+                    <input id="phone" name="phone">
+                </div>
+                <div>
+                    <label for="email">Email</label>
+                    <input id="email" name="email">
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h3>Work Summary</h3>
+            <div class="form-grid single">
+                <div>
+                    <label for="work_completed">Work Completed</label>
+                    <textarea id="work_completed" name="work_completed" placeholder="Describe the diagnosis, repair, maintenance, or service completed."></textarea>
+                </div>
+                <div>
+                    <label for="materials_used">Materials / Parts Notes</label>
+                    <textarea id="materials_used" name="materials_used" placeholder="List parts used, special materials, or anything the customer should see on the bill."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h3>Charges</h3>
+            <div class="form-grid">
+                <div>
+                    <label for="callout_fee">Call-Out Fee</label>
+                    <input id="callout_fee" name="callout_fee" inputmode="decimal" value="0">
+                </div>
+                <div>
+                    <label for="labour">Labour</label>
+                    <input id="labour" name="labour" inputmode="decimal" value="0">
+                </div>
+                <div>
+                    <label for="parts">Parts</label>
+                    <input id="parts" name="parts" inputmode="decimal" value="0">
+                </div>
+                <div>
+                    <label for="misc">Miscellaneous</label>
+                    <input id="misc" name="misc" inputmode="decimal" value="0">
+                </div>
+                <div>
+                    <label for="tax_rate">Tax Rate (%)</label>
+                    <input id="tax_rate" name="tax_rate" inputmode="decimal" value="5">
+                </div>
+                <div>
+                    <label for="payment_terms">Payment Terms</label>
+                    <input id="payment_terms" name="payment_terms" value="Due upon receipt">
+                </div>
+            </div>
+        </section>
+
+        <button type="submit">Generate Service Bill</button>
+    </form>
+
+    <aside class="sidebar-card">
+        <h3>Why this fits the field</h3>
+        <p>The layout is mobile friendly and focused on just enough information to hand a clean summary to the customer.</p>
+        <ul>
+            <li>No invoice numbering or back-office storage built in.</li>
+            <li>Simple enough for phone use after a job is done.</li>
+            <li>Printable bill view for emailing, saving, or sharing.</li>
+        </ul>
+    </aside>
+</div>
+{% endblock %}
