@@ -1,171 +1,85 @@
 {% extends "layout.html" %}
 
+{% block title %}Customer Quote{% endblock %}
+
 {% block content %}
-
-<style>
-.quote-container {
-    background: white;
-    width: 850px;
-    margin: 30px auto;
-    padding: 30px;
-    border-radius: 10px;
-    font-family: Arial, sans-serif;
-    color: black;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-}
-
-.header-left, .header-right {
-    width: 48%;
-}
-
-.section {
-    margin-top: 20px;
-}
-
-.line {
-    border-bottom: 1px solid #000;
-    margin: 5px 0 15px 0;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-th {
-    text-align: left;
-    border-bottom: 2px solid black;
-    padding-bottom: 5px;
-}
-
-td {
-    padding: 8px 0;
-}
-
-.amount {
-    text-align: right;
-}
-
-.totals {
-    margin-top: 20px;
-    text-align: right;
-    font-size: 16px;
-}
-
-.total-final {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.notes {
-    margin-top: 30px;
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-.fine-print {
-    margin-top: 40px;
-    font-size: 10px;
-    color: #666;
-    line-height: 1.3;
-    border-top: 1px solid #ccc;
-    padding-top: 10px;
-}
-    
-.signature {
-    margin-top: 50px;
-}
-</style>
-
-<div class="quote-container">
-
-    <h2>QUOTE</h2>
-    <div class="header">
-
-        <div class="header-left">
-            <strong>Name:</strong><br>
-            {{ result.customer }}<br><br>
-
-            <strong>Job Site:</strong><br>
-            {{ result.address }}<br><br>
-
-            <strong>Email:</strong><br>
-            {{ result.email }}
+<div class="print-shell">
+    <div class="print-card">
+        <div class="print-header">
+            <div class="print-title">
+                <h2>Installation Quote</h2>
+                <p>Prepared for {{ result.customer }}</p>
+                <p><strong>{{ company_name }}</strong></p>
+                <p>{{ company_address }}</p>
+                <p>{{ company_website }}</p>
+                <p><strong>Office Email:</strong> {{ office_email }}</p>
+            </div>
+            <div class="print-meta">
+                <p><strong>Date:</strong> {{ result.date }}</p>
+                <p><strong>Phone:</strong> {{ result.phone }}</p>
+                <p><strong>Email:</strong> {{ result.email }}</p>
+                <p><strong>Gas Contractor License:</strong> {{ gas_license }}</p>
+                <p><strong>Electrical Contractor License:</strong> {{ electrical_license }}</p>
+            </div>
         </div>
 
-        <div class="header-right">
-            <strong>Date:</strong><br>
-            {{ result.date }}<br><br>
-
-            <strong>Phone:</strong><br>
-            {{ result.phone }}
+        <div class="detail-grid">
+            <div class="print-block">
+                <h4>Customer</h4>
+                <p><strong>Name:</strong> {{ result.customer }}</p>
+                <p><strong>Job Site:</strong> {{ result.address }}</p>
+            </div>
+            <div class="print-block">
+                <h4>Quoted Equipment</h4>
+                <p><strong>Model:</strong> {{ result.model }}</p>
+                <p><strong>Scope:</strong> Complete installation with labour and materials to suit.</p>
+            </div>
         </div>
 
-    </div>
+        <div class="print-block" style="margin-bottom:20px;">
+            <h4>Estimator Information</h4>
+            <p><strong>Name:</strong> {{ result.estimator_name or "Not provided" }}</p>
+            <p><strong>Email:</strong> {{ result.estimator_email or "Not provided" }}</p>
+        </div>
 
-    <div class="section">
+        <div class="print-block">
+            <h4>Job Notes</h4>
+            <p>{{ result.notes or "No additional notes provided." }}</p>
+        </div>
+
         <table>
             <tr>
                 <th>Description</th>
                 <th class="amount">Amount</th>
             </tr>
-            
-   <div class=notes     
-  <strong>Job Notes:</strong><br>
-    {{ result.notes }}
-    </div>
-            
             <tr>
-                <td>
-                    {{ result.model }} -<pr>With All Labor and Materials to Suit</pr>
-                </td>
-                <td class="amount">
-                    ${{ "{:,.2f}".format(result.subtotal_with_commission | float) }}
-                </td>
+                <td>{{ result.model }} installation package</td>
+                <td class="amount">${{ "{:,.2f}".format(result.subtotal_with_commission | float) }}</td>
             </tr>
         </table>
+
+        <div class="totals">
+            <div class="totals-row"><span>Subtotal</span><strong>${{ "{:,.2f}".format(result.subtotal_with_commission | float) }}</strong></div>
+            <div class="totals-row"><span>GST (5%)</span><strong>${{ "{:,.2f}".format(result.tax | float) }}</strong></div>
+            <div class="totals-row final"><span>Total</span><strong>${{ "{:,.2f}".format(result.total | float) }}</strong></div>
+        </div>
+
+        <div class="print-block" style="margin-top:24px;">
+            <h4>Terms</h4>
+            <p>Payment due upon receipt of invoice. A 50% deposit plus GST is required upon acceptance, with the balance due upon completion.</p>
+            <p>Please confirm equipment is registered to receive any available extended warranties.</p>
+            <p>The above prices, specifications, and conditions are satisfactory and are hereby accepted. This proposal may be withdrawn if not accepted within 15 days.</p>
+        </div>
+
+        <div class="action-row">
+            <a class="button-link" href="{{ url_for('install_quote') }}">Create Another Quote</a>
+            {% if email_links.customer %}
+            <a class="button-link" href="{{ email_links.customer }}">Email Customer</a>
+            {% endif %}
+            <a class="button-link" href="{{ email_links.office }}">Send to Office</a>
+            <button type="button" onclick="window.print()">Print Quote</button>
+        </div>
     </div>
-
-    <div class="totals">
-        Subtotal: ${{ "{:,.2f}".format(result.subtotal_with_commission | float) }}<br>
-        GST (5%): ${{ "{:,.2f}".format(result.tax | float) }}<br><br>
-
-        <span class="total-final">
-            Total: ${{ "{:,.2f}".format(result.total | float) }}
-        </span>
-    </div>
-
-    <div class="totals">
-   <p style="text-align: right;">PAYMENT DUE UPON RECEIPT OF INVOICE</p>
-    </div>
-
-
-    
-    <div class="signature">
-        _______________________________<br>
-        Authorized Signature
-         <div class="fine-print">
-        <p>The above prices, specifications and conditions are satisfactory and are hereby accepted. You are authorized to do the work as specifed.</p></div>
-    <div class=notes>   
-    <p style="text-align: center;"><strong>A 50% deposit + GST is required upon acceptance. Balance due upon completion.</strong></p>
-    <p style="color: red; text-align: center;"><strong>PLEASE CONFIRM EQUIPMENT IS REGISTERED TO RECEIVE ANY AVAILABLE EXTENDED WARRANTIES</strong></p>
-    </div>
-    <hr style="margin-top:40px;">
-        <div class="fine-print">
-        <p style="text-align: center;">
-        All material garanteed to be as specified. All work to be completed in a worklike manner according to standard practices. Any alterations or deviations from the the above specifications involving extra costs will be executed upon written orders and will become an extra charge over and above the estimate. All agreements contingent upon strikes, accidents or delays beyond our control. Owners to carry fire, windstorm, and other necessary insurance.
-        Acceptance of Proposal.
-        </p>
-         <p style="text-align: center;">
-        All installations include complete system setup with all required materials, labour, and permits.
-         </p>
-        <p style="text-align: center;"><strong>Note: This Proposal may be withdrawn by us if not accepted within 15 days.</strong></p>
 </div>
 
 {% endblock %}
