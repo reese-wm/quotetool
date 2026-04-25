@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %}Big Valley Tools{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <span class="eyebrow">Operations Hub</span>
+    <h2>Choose the tool your team needs before the work starts.</h2>
+    <p>
+        This home screen gives your office and field staff one clean starting point. The install quote tool handles
+        replacement quotes, the service bill tool helps techs build customer-ready charges from their phones, and the
+        purchase order tool creates a fast PO number from the customer name and order date.
+    </p>
+</section>
+
+<section class="tool-grid">
+    <article class="tool-card">
+        <span class="badge">Office</span>
+        <h3>Install Quote Tool</h3>
+        <p>Use your current quote builder for equipment installs, accessories, labour, and a printable customer quote.</p>
+        <ul>
+            <li>Built around your existing pricing flow</li>
+            <li>Shows a live breakdown before generating the quote</li>
+            <li>Works well for office prep on desktop or tablet</li>
+        </ul>
+        <a class="cta" href="{{ url_for('install_quote') }}">Open Install Quote</a>
+    </article>
+
+    <article class="tool-card">
+        <span class="badge" style="background:#2b6b5d;">Field</span>
+        <h3>Service Bill Tool</h3>
+        <p>Give techs a simple mobile form to build customer bills on site without touching your internal invoicing system.</p>
+        <ul>
+            <li>Tracks labour, parts, misc charges, and tax</li>
+            <li>Generates a clean bill summary for the customer</li>
+            <li>Mobile-friendly layout for phones in the field</li>
+        </ul>
+        <a class="cta" href="{{ url_for('service_quote') }}">Open Service Bill</a>
+    </article>
+
+    <article class="tool-card">
+        <span class="badge" style="background:#8c5a2b;">Purchasing</span>
+        <h3>Purchase Order Tool</h3>
+        <p>Create quick POs with a generated number based on the customer name and order date, ready to share with staff or vendors.</p>
+        <ul>
+            <li>Creates a consistent PO number automatically</li>
+            <li>Includes vendor, requester, job reference, and amount</li>
+            <li>Optimized for quick use from phones or desktop</li>
+        </ul>
+        <a class="cta" href="{{ url_for('purchase_order') }}">Open Purchase Order</a>
+    </article>
+</section>
+{% endblock %}
