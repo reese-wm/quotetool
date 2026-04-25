@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %}Purchase Order{% endblock %}
+
+{% block content %}
+<div class="print-shell">
+    <div class="print-card">
+        <div class="print-header">
+            <div class="print-title">
+                <h2>Purchase Order</h2>
+                <p>{{ result.po_number }}</p>
+            </div>
+            <div class="print-meta">
+                <p><strong>Order Date:</strong> {{ result.order_date }}</p>
+                <p><strong>Customer:</strong> {{ result.customer }}</p>
+                <p><strong>Vendor:</strong> {{ result.vendor or "Not entered" }}</p>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            <div class="print-block">
+                <h4>Request Details</h4>
+                <p><strong>Requested By:</strong> {{ result.requested_by or "Not entered" }}</p>
+                <p><strong>Job Reference:</strong> {{ result.job_reference or "Not entered" }}</p>
+            </div>
+            <div class="print-block">
+                <h4>Purchase Order Number</h4>
+                <p><strong>{{ result.po_number }}</strong></p>
+                <p>This number is based on the customer name and order date.</p>
+            </div>
+        </div>
+
+        <div class="print-block">
+            <h4>Item Description</h4>
+            <p>{{ result.item_description or "No item description entered." }}</p>
+        </div>
+
+        <div class="print-block" style="margin-top:20px;">
+            <h4>Notes</h4>
+            <p>{{ result.notes or "No additional notes entered." }}</p>
+        </div>
+
+        <div class="totals">
+            <div class="totals-row final"><span>Order Amount</span><strong>${{ "{:,.2f}".format(result.amount) }}</strong></div>
+        </div>
+
+        <div class="action-row">
+            <a class="button-link" href="{{ url_for('purchase_order') }}">Create Another PO</a>
+            <button type="button" onclick="window.print()">Print PO</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
