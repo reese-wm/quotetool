@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+
+{% block title %}Purchase Order Tool{% endblock %}
+
+{% block content %}
+<div class="hero" style="margin-bottom:24px;">
+    <span class="eyebrow">Purchasing</span>
+    <h2>Create a simple purchase order with an automatic PO number.</h2>
+    <p>The PO number is generated from the customer name and order date so the format stays consistent even when the form is filled out from a phone.</p>
+</div>
+
+<div class="form-layout">
+    <form method="POST" class="form-stack">
+        <section class="form-section">
+            <h3>Order Details</h3>
+            <div class="form-grid">
+                <div>
+                    <label for="customer">Customer Name</label>
+                    <input id="customer" name="customer" required>
+                </div>
+                <div>
+                    <label for="order_date">Order Date</label>
+                    <input id="order_date" name="order_date" type="date" required>
+                </div>
+                <div>
+                    <label for="vendor">Vendor / Supplier</label>
+                    <input id="vendor" name="vendor">
+                </div>
+                <div>
+                    <label for="requested_by">Requested By</label>
+                    <input id="requested_by" name="requested_by">
+                </div>
+                <div class="form-grid single" style="grid-column: 1 / -1;">
+                    <div>
+                        <label for="job_reference">Job Reference</label>
+                        <input id="job_reference" name="job_reference" placeholder="Optional work order, install name, or site reference">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h3>What Is Being Ordered</h3>
+            <div class="form-grid single">
+                <div>
+                    <label for="item_description">Item Description</label>
+                    <textarea id="item_description" name="item_description" placeholder="List equipment, materials, sizes, quantities, or any notes the supplier needs."></textarea>
+                </div>
+                <div>
+                    <label for="notes">Internal Notes</label>
+                    <textarea id="notes" name="notes" placeholder="Optional notes for the team or supplier."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h3>Amount</h3>
+            <div class="form-grid">
+                <div>
+                    <label for="amount">Order Amount</label>
+                    <input id="amount" name="amount" inputmode="decimal" value="0">
+                </div>
+            </div>
+        </section>
+
+        <button type="submit">Generate Purchase Order</button>
+    </form>
+
+    <aside class="sidebar-card">
+        <h3>PO Number Format</h3>
+        <p>This version generates purchase order numbers in the format <strong>PO-XXXX-YYYYMMDD</strong>.</p>
+        <ul>
+            <li><strong>XXXX</strong> comes from the customer name.</li>
+            <li><strong>YYYYMMDD</strong> comes from the selected order date.</li>
+            <li>Example: <strong>PO-SMIT-20260425</strong></li>
+        </ul>
+    </aside>
+</div>
+{% endblock %}
