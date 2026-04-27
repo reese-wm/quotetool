@@ -16,8 +16,8 @@
             </div>
             <div class="print-meta">
                 <p><strong>Date:</strong> {{ result.date }}</p>
-                
-               
+                <p><strong>Phone:</strong> {{ result.phone }}</p>
+                <p><strong>Email:</strong> {{ result.email }}</p>
                 <p><strong>Gas Contractor License:</strong> {{ gas_license }}</p>
                 <p><strong>Electrical Contractor License:</strong> {{ electrical_license }}</p>
             </div>
@@ -71,12 +71,42 @@
             <p>The above prices, specifications, and conditions are satisfactory and are hereby accepted. This proposal may be withdrawn if not accepted within 15 days.</p>
         </div>
 
+        {% if email_status_message %}
+        <div class="print-block" style="margin-top:20px; border-color:{% if email_status_ok %}#b8d9c8{% else %}#e7b7b7{% endif %}; background:{% if email_status_ok %}#f1fbf5{% else %}#fff5f5{% endif %};">
+            <h4>Email Status</h4>
+            <p>{{ email_status_message }}</p>
+        </div>
+        {% elif not smtp_ready %}
+        <div class="print-block" style="margin-top:20px; border-color:#e6d7b4; background:#fffaf0;">
+            <h4>Email Setup Needed</h4>
+            <p>These buttons send from the Flask app using SMTP. Set your SMTP environment variables first, then the send buttons below will deliver directly from the server.</p>
+        </div>
+        {% endif %}
+
         <div class="action-row">
             <a class="button-link" href="{{ url_for('install_quote') }}">Create Another Quote</a>
-            {% if email_links.customer %}
-            <a class="button-link" href="{{ email_links.customer }}">Email Customer</a>
+            <form method="POST" action="{{ url_for('install_quote_pdf') }}">
+                {% for key, value in result.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+                <button type="submit">Download PDF</button>
+            </form>
+            {% if result.email %}
+            <form method="POST" action="{{ url_for('send_install_quote_email') }}">
+                {% for key, value in result.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+                <input type="hidden" name="send_target" value="customer">
+                <button type="submit">Email Customer</button>
+            </form>
             {% endif %}
-            <a class="button-link" href="{{ email_links.office }}">Send to Office</a>
+            <form method="POST" action="{{ url_for('send_install_quote_email') }}">
+                {% for key, value in result.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+                <input type="hidden" name="send_target" value="office">
+                <button type="submit">Send to Office</button>
+            </form>
             <button type="button" onclick="window.print()">Print Quote</button>
         </div>
     </div>
