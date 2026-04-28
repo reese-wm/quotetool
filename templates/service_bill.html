@@ -77,13 +77,13 @@
 
         {% if email_status_message %}
         <div class="print-block" style="margin-top:20px; border-color:{% if email_status_ok %}#b8d9c8{% else %}#e7b7b7{% endif %}; background:{% if email_status_ok %}#f1fbf5{% else %}#fff5f5{% endif %};">
-            <h4>Email Status</h4>
+            <h4>Delivery Status</h4>
             <p>{{ email_status_message }}</p>
         </div>
-        {% elif not smtp_ready %}
+        {% elif not smtp_ready and not drive_ready %}
         <div class="print-block" style="margin-top:20px; border-color:#e6d7b4; background:#fffaf0;">
-            <h4>Email Setup Needed</h4>
-            <p>These buttons send from the Flask app using SMTP. Set your SMTP environment variables first, then the send buttons below will deliver directly from the server.</p>
+            <h4>Delivery Setup Needed</h4>
+            <p>Email Customer needs SMTP, and Send to Office can also save the PDF to Google Drive when Drive is configured. Set up one or both services and these actions will deliver directly from the app.</p>
         </div>
         {% endif %}
 
