@@ -9,6 +9,17 @@ from flask import Flask, render_template, request, send_file
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
+try:
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    from googleapiclient.http import MediaIoBaseUpload
+except ImportError:
+    service_account = None
+    build = None
+    HttpError = None
+    MediaIoBaseUpload = None
+
 app = Flask(__name__)
 
 COMPANY_NAME = "Big Valley Heating Ltd."
@@ -17,6 +28,10 @@ COMPANY_WEBSITE = "www.bigvalleyheating.ca"
 GAS_LICENSE = "LGA0003228"
 ELECTRICAL_LICENSE = "LEL0100644"
 OFFICE_EMAIL = "shopbigvalley@gmail.com"
+DEFAULT_DRIVE_FOLDER_ID = "10vtds9baKhwS89IUFw2I8LYzoWk8lpBD"
+DEFAULT_DRIVE_SERVICE_ACCOUNT_EMAIL = (
+    "quotetool-drive-uploader@service-tools-494702.iam.gserviceaccount.com"
+)
 
 
 def load_local_env():
@@ -75,6 +90,29 @@ def smtp_is_ready():
     return bool(config["host"] and config["port"] and config["from_email"])
 
 
+def drive_config():
+    return {
+        "service_account_file": os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", ""),
+        "folder_id": os.getenv("GOOGLE_DRIVE_SERVICE_FOLDER_ID", DEFAULT_DRIVE_FOLDER_ID),
+        "service_account_email": os.getenv(
+            "GOOGLE_SERVICE_ACCOUNT_EMAIL",
+            DEFAULT_DRIVE_SERVICE_ACCOUNT_EMAIL,
+        ),
+    }
+
+
+def drive_is_ready():
+    config = drive_config()
+    return bool(
+        service_account
+        and build
+        and MediaIoBaseUpload
+        and config["service_account_file"]
+        and config["folder_id"]
+        and os.path.exists(config["service_account_file"])
+    )
+
+
 def ensure_space(pdf, current_y, needed_height):
     if current_y - needed_height < 54:
         pdf.showPage()
@@ -111,13 +149,22 @@ def draw_paragraph(pdf, text, x, y, width=470, font_name="Helvetica", font_size=
     return text_object.getY() - 2
 
 
-def build_pdf_response(filename, builder):
+def build_pdf_bytes(builder):
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
     builder(pdf)
     pdf.save()
-    buffer.seek(0)
-    return send_file(buffer, as_attachment=True, download_name=filename, mimetype="application/pdf")
+    return buffer.getvalue()
+
+
+def build_pdf_response(filename, builder):
+    pdf_bytes = build_pdf_bytes(builder)
+    return send_file(
+        BytesIO(pdf_bytes),
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/pdf",
+    )
 
 
 def draw_company_header(pdf, document_title, reference_text):
@@ -138,7 +185,70 @@ def draw_company_header(pdf, document_title, reference_text):
     return 660
 
 
-def render_install_quote_pdf(result):
+def upload_pdf_to_drive(filename, pdf_bytes):
+    config = drive_config()
+
+    if not drive_is_ready():
+        if not service_account or not build or not MediaIoBaseUpload:
+            return False, "Google Drive upload skipped because the Google Drive libraries are not installed yet."
+        if not config["service_account_file"]:
+            return False, "Google Drive upload skipped because no service account file is configured."
+        if not os.path.exists(config["service_account_file"]):
+            return False, "Google Drive upload skipped because the service account file could not be found."
+        return False, "Google Drive upload skipped because no target folder is configured."
+
+    try:
+        credentials = service_account.Credentials.from_service_account_file(
+            config["service_account_file"],
+            scopes=["https://www.googleapis.com/auth/drive"],
+        )
+        service = build("drive", "v3", credentials=credentials, cache_discovery=False)
+        file_metadata = {
+            "name": filename,
+            "parents": [config["folder_id"]],
+        }
+        media = MediaIoBaseUpload(BytesIO(pdf_bytes), mimetype="application/pdf", resumable=False)
+        uploaded_file = (
+            service.files()
+            .create(
+                body=file_metadata,
+                media_body=media,
+                fields="id,name",
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
+        return True, f"Saved PDF to Google Drive as {uploaded_file.get('name')}."
+    except Exception as exc:
+        error_text = str(exc)
+        if "Service Accounts do not have storage quota" in error_text or "storageQuotaExceeded" in error_text:
+            return (
+                False,
+                "Google Drive upload failed because service accounts cannot save directly into a regular My Drive folder. Move the Service folder into a Shared Drive, or switch this app to OAuth using shopbigvalley@gmail.com.",
+            )
+        return False, f"Google Drive upload failed: {exc}"
+
+
+def deliver_office_copy(result, quote_kind, pdf_builder):
+    messages = []
+    success = False
+
+    filename, pdf_bytes = pdf_builder(result)
+    drive_ok, drive_message = upload_pdf_to_drive(filename, pdf_bytes)
+    messages.append(drive_message)
+    success = success or drive_ok
+
+    if smtp_is_ready():
+        email_ok, email_message = send_quote_email(result, quote_kind=quote_kind, send_to_office=True)
+        messages.append(email_message)
+        success = success or email_ok
+    else:
+        messages.append("Office email skipped because SMTP is not configured.")
+
+    return success, " ".join(messages)
+
+
+def build_install_quote_pdf_document(result):
     customer_name = result.get("customer") or "customer"
     filename = f"install-quote-{safe_filename(customer_name, 'customer')}.pdf"
 
@@ -219,10 +329,20 @@ def render_install_quote_pdf(result):
             y,
         )
 
-    return build_pdf_response(filename, builder)
+    return filename, build_pdf_bytes(builder)
 
 
-def render_service_bill_pdf(result):
+def render_install_quote_pdf(result):
+    filename, pdf_bytes = build_install_quote_pdf_document(result)
+    return send_file(
+        BytesIO(pdf_bytes),
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/pdf",
+    )
+
+
+def build_service_bill_pdf_document(result):
     customer_name = result.get("customer") or "customer"
     filename = f"service-bill-{safe_filename(customer_name, 'customer')}.pdf"
 
@@ -287,7 +407,17 @@ def render_service_bill_pdf(result):
         y -= 18
         draw_paragraph(pdf, result.get("materials_used") or "No materials or part notes entered.", 54, y)
 
-    return build_pdf_response(filename, builder)
+    return filename, build_pdf_bytes(builder)
+
+
+def render_service_bill_pdf(result):
+    filename, pdf_bytes = build_service_bill_pdf_document(result)
+    return send_file(
+        BytesIO(pdf_bytes),
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/pdf",
+    )
 
 
 def render_purchase_order_pdf(result):
@@ -343,6 +473,7 @@ def company_context():
         "electrical_license": ELECTRICAL_LICENSE,
         "office_email": OFFICE_EMAIL,
         "smtp_ready": smtp_is_ready(),
+        "drive_ready": drive_is_ready(),
     }
 
 
@@ -669,11 +800,18 @@ def quote():
 def send_install_quote_email():
     result = request.form.to_dict()
     send_to_office = request.form.get("send_target") == "office"
-    email_status_ok, email_status_message = send_quote_email(
-        result,
-        quote_kind="install",
-        send_to_office=send_to_office,
-    )
+    if send_to_office:
+        email_status_ok, email_status_message = deliver_office_copy(
+            result,
+            quote_kind="install",
+            pdf_builder=build_install_quote_pdf_document,
+        )
+    else:
+        email_status_ok, email_status_message = send_quote_email(
+            result,
+            quote_kind="install",
+            send_to_office=False,
+        )
     return render_template(
         "quote.html",
         result=result,
@@ -700,11 +838,18 @@ def service_quote():
 def send_service_bill_email():
     result = build_service_bill(request.form)
     send_to_office = request.form.get("send_target") == "office"
-    email_status_ok, email_status_message = send_quote_email(
-        result,
-        quote_kind="service",
-        send_to_office=send_to_office,
-    )
+    if send_to_office:
+        email_status_ok, email_status_message = deliver_office_copy(
+            result,
+            quote_kind="service",
+            pdf_builder=build_service_bill_pdf_document,
+        )
+    else:
+        email_status_ok, email_status_message = send_quote_email(
+            result,
+            quote_kind="service",
+            send_to_office=False,
+        )
     return render_template(
         "service_bill.html",
         result=result,
