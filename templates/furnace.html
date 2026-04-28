@@ -62,7 +62,7 @@
                 </div>
                 <div>
                     <label for="model">Model Number</label>
-                    <input id="model" name="model" value="{{ request.form.get('model', '') }}">
+                    <input id="model" name="model" value="{{ request.form.get('model', '') }}" style="text-transform:uppercase;">
                 </div>
                 <div>
                     <label for="pipe">Pipe Length (ft)</label>
@@ -155,7 +155,7 @@
             <div class="form-grid single">
                 <div>
                     <label for="notes">Notes</label>
-                    <textarea id="notes" name="notes">{{ request.form.get('notes', '') }}</textarea>
+                    <textarea id="notes" name="notes" style="text-transform:uppercase;">{{ request.form.get('notes', '') }}</textarea>
                 </div>
             </div>
         </section>
