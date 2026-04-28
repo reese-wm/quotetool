@@ -4,6 +4,7 @@ from io import BytesIO
 import os
 import re
 import smtplib
+from urllib.parse import quote as url_quote
 
 from flask import Flask, render_template, request, send_file
 from reportlab.lib.pagesizes import letter
@@ -32,6 +33,12 @@ DEFAULT_DRIVE_FOLDER_ID = "10vtds9baKhwS89IUFw2I8LYzoWk8lpBD"
 DEFAULT_DRIVE_SERVICE_ACCOUNT_EMAIL = (
     "quotetool-drive-uploader@service-tools-494702.iam.gserviceaccount.com"
 )
+PERMIT_OPTIONS = {
+    "0": "No Permit",
+    "200_gas": "Gas Permit",
+    "200_electrical": "Electrical Permit",
+    "400_both": "Gas & Electrical Permit",
+}
 
 
 def load_local_env():
@@ -90,6 +97,10 @@ def smtp_is_ready():
     return bool(config["host"] and config["port"] and config["from_email"])
 
 
+def build_mailto_link(recipient, subject, body):
+    return f"mailto:{recipient}?subject={url_quote(subject)}&body={url_quote(body)}"
+
+
 def drive_config():
     return {
         "service_account_file": os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", ""),
@@ -107,7 +118,8 @@ def drive_is_ready():
         service_account
         and build
         and MediaIoBaseUpload
-        and config["service_account_file"]
+        and
+        config["service_account_file"]
         and config["folder_id"]
         and os.path.exists(config["service_account_file"])
     )
@@ -551,6 +563,28 @@ def build_install_quote_email_content(result, send_to_office=False):
     }
 
 
+def build_install_quote_customer_mailto(result):
+    customer_name = result.get("customer") or "Customer"
+    quote_date = result.get("date") or datetime.now().strftime("%Y-%m-%d")
+    total = format_currency(result.get("total"))
+    customer_email = result.get("email") or "Not provided"
+
+    subject = f"Customer Quote Draft - {customer_name} - {quote_date}"
+    body = (
+        f"Please send this installation quote to the customer.\n\n"
+        f"Customer: {customer_name}\n"
+        f"Customer Email: {customer_email}\n"
+        f"Job Site: {result.get('address') or 'Not provided'}\n"
+        f"Quote Date: {quote_date}\n"
+        f"Quoted Total: {total}\n"
+        f"Model: {result.get('model') or 'Not provided'}\n"
+        f"Estimator: {result.get('estimator_name') or 'Not provided'}\n"
+        f"Estimator Email: {result.get('estimator_email') or 'Not provided'}\n"
+        f"Notes: {result.get('notes') or 'None'}\n"
+    )
+    return build_mailto_link(OFFICE_EMAIL, subject, body)
+
+
 def build_service_bill_email_content(result, send_to_office=False):
     customer_name = result.get("customer") or "Customer"
     service_date = result.get("service_date") or "today"
@@ -595,6 +629,27 @@ def build_service_bill_email_content(result, send_to_office=False):
     }
 
 
+def build_service_bill_customer_mailto(result):
+    customer_name = result.get("customer") or "Customer"
+    service_date = result.get("service_date") or datetime.now().strftime("%Y-%m-%d")
+    total = format_currency(result.get("total"))
+    customer_email = result.get("email") or "Not provided"
+
+    subject = f"Customer Service Bill Draft - {customer_name} - {service_date}"
+    body = (
+        f"Please send this service bill to the customer.\n\n"
+        f"Customer: {customer_name}\n"
+        f"Customer Email: {customer_email}\n"
+        f"Service Address: {result.get('address') or 'Not provided'}\n"
+        f"Service Date: {service_date}\n"
+        f"Service Total: {total}\n"
+        f"Technician: {result.get('technician') or 'Not provided'}\n"
+        f"Work Completed: {result.get('work_completed') or 'Not provided'}\n"
+        f"Materials / Parts Notes: {result.get('materials_used') or 'None'}\n"
+    )
+    return build_mailto_link(OFFICE_EMAIL, subject, body)
+
+
 def send_quote_email(result, quote_kind, send_to_office=False):
     if quote_kind == "install":
         payload = build_install_quote_email_content(result, send_to_office=send_to_office)
@@ -626,6 +681,7 @@ def calculate_install_quote(data):
     model = data.get("model", "")
     pipe = parse_number(data.get("pipe"))
     lineset = parse_number(data.get("lineset"))
+    permit_option = data.get("permit_option", "0")
     difficulty = parse_number(data.get("difficulty"), 1)
     electrical = parse_number(data.get("electrical"))
     additional = parse_number(data.get("additional"))
@@ -638,7 +694,8 @@ def calculate_install_quote(data):
 
     materials = (equipment * 1.12) + 1000
     freight = 100
-    permit = 200
+    permit = parse_number((permit_option or "0").split("_", 1)[0])
+    permit_label = PERMIT_OPTIONS.get(permit_option, "No Permit")
     pipe_cost = pipe * 6
     lineset_cost = lineset * 10
     labour = 1800 * difficulty
@@ -683,6 +740,8 @@ def calculate_install_quote(data):
         "materials": materials,
         "freight": freight,
         "permit": permit,
+        "permit_label": permit_label,
+        "permit_option": permit_option,
         "pipe_cost": pipe_cost,
         "lineset_cost": lineset_cost,
         "slim_duct_cost": slim_duct_cost,
@@ -793,7 +852,11 @@ def install_quote():
 @app.route("/quote", methods=["POST"])
 def quote():
     result = request.form.to_dict()
-    return render_template("quote.html", result=result)
+    return render_template(
+        "quote.html",
+        result=result,
+        customer_mailto_link=build_install_quote_customer_mailto(result),
+    )
 
 
 @app.route("/quote/email", methods=["POST"])
@@ -815,6 +878,7 @@ def send_install_quote_email():
     return render_template(
         "quote.html",
         result=result,
+        customer_mailto_link=build_install_quote_customer_mailto(result),
         email_status_ok=email_status_ok,
         email_status_message=email_status_message,
     )
@@ -830,7 +894,11 @@ def install_quote_pdf():
 def service_quote():
     if request.method == "POST":
         result = build_service_bill(request.form)
-        return render_template("service_bill.html", result=result)
+        return render_template(
+            "service_bill.html",
+            result=result,
+            customer_mailto_link=build_service_bill_customer_mailto(result),
+        )
     return render_template("service_quote.html")
 
 
@@ -853,6 +921,7 @@ def send_service_bill_email():
     return render_template(
         "service_bill.html",
         result=result,
+        customer_mailto_link=build_service_bill_customer_mailto(result),
         email_status_ok=email_status_ok,
         email_status_message=email_status_message,
     )
