@@ -54,6 +54,10 @@ def format_currency(value):
     return "${:,.2f}".format(parse_number(value))
 
 
+def normalize_upper_text(value):
+    return (value or "").strip().upper()
+
+
 def safe_filename(value, fallback):
     cleaned = re.sub(r"[^A-Za-z0-9]+", "-", (value or "").strip()).strip("-").lower()
     return cleaned or fallback
@@ -182,6 +186,8 @@ def deliver_office_copy(result, quote_kind, pdf_builder):
 def build_install_quote_pdf_document(result):
     customer_name = result.get("customer") or "customer"
     filename = f"install-quote-{safe_filename(customer_name, 'customer')}.pdf"
+    model_text = normalize_upper_text(result.get("model")) or "NOT PROVIDED"
+    notes_text = normalize_upper_text(result.get("notes")) or "NO ADDITIONAL NOTES PROVIDED."
 
     def builder(pdf):
         y = draw_company_header(
@@ -200,7 +206,7 @@ def build_install_quote_pdf_document(result):
             f"Date: {result.get('date') or 'Not provided'}",
             f"Estimator: {result.get('estimator_name') or 'Not provided'}",
             f"Estimator Email: {result.get('estimator_email') or 'Not provided'}",
-            f"Model: {result.get('model') or 'Not provided'}",
+            f"Model: {model_text}",
         ]
         permit_label = result.get("permit_label")
         if permit_label and permit_label != "No Permit":
@@ -235,7 +241,7 @@ def build_install_quote_pdf_document(result):
         pdf.setFont("Helvetica-Bold", 11)
         pdf.drawString(54, y, "Job Notes")
         y -= 18
-        y = draw_paragraph(pdf, result.get("notes") or "No additional notes provided.", 54, y)
+        y = draw_paragraph(pdf, notes_text, 54, y)
 
         y -= 18
         y = ensure_space(pdf, y, 110)
@@ -279,6 +285,10 @@ def render_install_quote_pdf(result):
 def build_service_bill_pdf_document(result):
     customer_name = result.get("customer") or "customer"
     filename = f"service-bill-{safe_filename(customer_name, 'customer')}.pdf"
+    equipment_model = normalize_upper_text(result.get("equipment_model")) or "NOT ENTERED"
+    equipment_serial = normalize_upper_text(result.get("equipment_serial")) or "NOT ENTERED"
+    work_completed = normalize_upper_text(result.get("work_completed")) or "NO WORK SUMMARY ENTERED."
+    materials_used = normalize_upper_text(result.get("materials_used")) or "NO MATERIALS OR PART NOTES ENTERED."
 
     def builder(pdf):
         y = draw_company_header(
@@ -312,6 +322,14 @@ def build_service_bill_pdf_document(result):
 
         y -= 6
         pdf.setFont("Helvetica-Bold", 11)
+        pdf.drawString(54, y, "Equipment")
+        y -= 18
+        draw_line(pdf, f"Model Number: {equipment_model}", 54, y)
+        y -= 14
+        draw_line(pdf, f"Serial Number: {equipment_serial}", 54, y)
+        y -= 20
+
+        pdf.setFont("Helvetica-Bold", 11)
         pdf.drawString(54, y, "Charges")
         y -= 18
         charge_lines = [
@@ -332,14 +350,14 @@ def build_service_bill_pdf_document(result):
         pdf.setFont("Helvetica-Bold", 11)
         pdf.drawString(54, y, "Work Completed")
         y -= 18
-        y = draw_paragraph(pdf, result.get("work_completed") or "No work summary entered.", 54, y)
+        y = draw_paragraph(pdf, work_completed, 54, y)
 
         y -= 18
         y = ensure_space(pdf, y, 80)
         pdf.setFont("Helvetica-Bold", 11)
         pdf.drawString(54, y, "Materials / Parts Notes")
         y -= 18
-        draw_paragraph(pdf, result.get("materials_used") or "No materials or part notes entered.", 54, y)
+        draw_paragraph(pdf, materials_used, 54, y)
 
     return filename, build_pdf_bytes(builder)
 
@@ -449,6 +467,8 @@ def build_install_quote_email_content(result, send_to_office=False):
     total = "${:,.2f}".format(parse_number(result.get("total")))
     estimator_name = result.get("estimator_name") or "Big Valley Heating"
     estimator_email = result.get("estimator_email") or OFFICE_EMAIL
+    model_text = normalize_upper_text(result.get("model")) or "NOT PROVIDED"
+    notes_text = normalize_upper_text(result.get("notes")) or "NONE"
 
     if send_to_office:
         return {
@@ -463,9 +483,9 @@ def build_install_quote_email_content(result, send_to_office=False):
                 f"Estimator: {estimator_name}\n"
                 f"Estimator Email: {estimator_email}\n"
                 f"Quoted Total: {total}\n"
-                f"Model: {result.get('model') or 'Not provided'}\n"
+                f"Model: {model_text}\n"
                 f"Address: {result.get('address') or 'Not provided'}\n"
-                f"Job Notes: {result.get('notes') or 'None'}\n"
+                f"Job Notes: {notes_text}\n"
             ),
         }
 
@@ -477,7 +497,7 @@ def build_install_quote_email_content(result, send_to_office=False):
             f"Hello {customer_name},\n\n"
             f"Here is your installation quote dated {quote_date}.\n"
             f"Quoted total: {total}\n"
-            f"Model: {result.get('model') or 'Not provided'}\n"
+            f"Model: {model_text}\n"
             f"Job site: {result.get('address') or 'Not provided'}\n\n"
             f"If you have any questions, please reply to {estimator_email}.\n\n"
             f"Thank you,\n"
@@ -496,6 +516,8 @@ def build_install_quote_customer_mailto(result):
     quote_date = result.get("date") or datetime.now().strftime("%Y-%m-%d")
     total = format_currency(result.get("total"))
     customer_email = result.get("email") or "Not provided"
+    model_text = normalize_upper_text(result.get("model")) or "NOT PROVIDED"
+    notes_text = normalize_upper_text(result.get("notes")) or "NONE"
 
     subject = f"Customer Quote Draft - {customer_name} - {quote_date}"
     body = (
@@ -505,10 +527,10 @@ def build_install_quote_customer_mailto(result):
         f"Job Site: {result.get('address') or 'Not provided'}\n"
         f"Quote Date: {quote_date}\n"
         f"Quoted Total: {total}\n"
-        f"Model: {result.get('model') or 'Not provided'}\n"
+        f"Model: {model_text}\n"
         f"Estimator: {result.get('estimator_name') or 'Not provided'}\n"
         f"Estimator Email: {result.get('estimator_email') or 'Not provided'}\n"
-        f"Notes: {result.get('notes') or 'None'}\n"
+        f"Notes: {notes_text}\n"
     )
     return build_mailto_link(OFFICE_EMAIL, subject, body)
 
@@ -517,6 +539,10 @@ def build_service_bill_email_content(result, send_to_office=False):
     customer_name = result.get("customer") or "Customer"
     service_date = result.get("service_date") or "today"
     total = "${:,.2f}".format(parse_number(result.get("total")))
+    equipment_model = normalize_upper_text(result.get("equipment_model")) or "NOT ENTERED"
+    equipment_serial = normalize_upper_text(result.get("equipment_serial")) or "NOT ENTERED"
+    work_completed = normalize_upper_text(result.get("work_completed")) or "NOT PROVIDED"
+    materials_used = normalize_upper_text(result.get("materials_used")) or "NONE"
 
     if send_to_office:
         return {
@@ -531,8 +557,10 @@ def build_service_bill_email_content(result, send_to_office=False):
                 f"Technician: {result.get('technician') or 'Not provided'}\n"
                 f"Service Total: {total}\n"
                 f"Address: {result.get('address') or 'Not provided'}\n"
-                f"Work Completed: {result.get('work_completed') or 'Not provided'}\n"
-                f"Materials / Parts Notes: {result.get('materials_used') or 'None'}\n"
+                f"Equipment Model: {equipment_model}\n"
+                f"Equipment Serial: {equipment_serial}\n"
+                f"Work Completed: {work_completed}\n"
+                f"Materials / Parts Notes: {materials_used}\n"
             ),
         }
 
@@ -546,6 +574,8 @@ def build_service_bill_email_content(result, send_to_office=False):
             f"Service total: {total}\n"
             f"Technician: {result.get('technician') or 'Not provided'}\n"
             f"Service address: {result.get('address') or 'Not provided'}\n\n"
+            f"Equipment model: {equipment_model}\n"
+            f"Equipment serial: {equipment_serial}\n\n"
             f"If you have any questions, please contact {OFFICE_EMAIL}.\n\n"
             f"Thank you,\n"
             f"{COMPANY_NAME}\n"
@@ -562,6 +592,10 @@ def build_service_bill_customer_mailto(result):
     service_date = result.get("service_date") or datetime.now().strftime("%Y-%m-%d")
     total = format_currency(result.get("total"))
     customer_email = result.get("email") or "Not provided"
+    equipment_model = normalize_upper_text(result.get("equipment_model")) or "NOT ENTERED"
+    equipment_serial = normalize_upper_text(result.get("equipment_serial")) or "NOT ENTERED"
+    work_completed = normalize_upper_text(result.get("work_completed")) or "NOT PROVIDED"
+    materials_used = normalize_upper_text(result.get("materials_used")) or "NONE"
 
     subject = f"Customer Service Bill Draft - {customer_name} - {service_date}"
     body = (
@@ -572,8 +606,10 @@ def build_service_bill_customer_mailto(result):
         f"Service Date: {service_date}\n"
         f"Service Total: {total}\n"
         f"Technician: {result.get('technician') or 'Not provided'}\n"
-        f"Work Completed: {result.get('work_completed') or 'Not provided'}\n"
-        f"Materials / Parts Notes: {result.get('materials_used') or 'None'}\n"
+        f"Equipment Model: {equipment_model}\n"
+        f"Equipment Serial: {equipment_serial}\n"
+        f"Work Completed: {work_completed}\n"
+        f"Materials / Parts Notes: {materials_used}\n"
     )
     return build_mailto_link(OFFICE_EMAIL, subject, body)
 
@@ -605,9 +641,9 @@ def calculate_install_quote(data):
     estimator_name = data.get("estimator_name", "")
     estimator_email = data.get("estimator_email", "")
     date = data.get("date", "")
-    notes = data.get("notes", "")
+    notes = normalize_upper_text(data.get("notes", ""))
     equipment = parse_number(data.get("equipment"))
-    model = data.get("model", "")
+    model = normalize_upper_text(data.get("model", ""))
     pipe = parse_number(data.get("pipe"))
     lineset = parse_number(data.get("lineset"))
     permit_option = data.get("permit_option", "0")
@@ -695,8 +731,10 @@ def build_service_bill(data):
     email = data.get("email", "")
     service_date = data.get("service_date", "")
     technician = data.get("technician", "")
-    work_completed = data.get("work_completed", "")
-    materials_used = data.get("materials_used", "")
+    work_completed = normalize_upper_text(data.get("work_completed", ""))
+    materials_used = normalize_upper_text(data.get("materials_used", ""))
+    equipment_model = normalize_upper_text(data.get("equipment_model", ""))
+    equipment_serial = normalize_upper_text(data.get("equipment_serial", ""))
     callout_fee = parse_number(data.get("callout_fee"))
     labour = parse_number(data.get("labour"))
     parts = parse_number(data.get("parts"))
@@ -715,6 +753,8 @@ def build_service_bill(data):
         "email": email,
         "service_date": service_date,
         "technician": technician,
+        "equipment_model": equipment_model,
+        "equipment_serial": equipment_serial,
         "work_completed": work_completed,
         "materials_used": materials_used,
         "callout_fee": callout_fee,
