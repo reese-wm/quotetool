@@ -73,6 +73,15 @@
                     <input id="lineset" name="lineset" inputmode="decimal" value="{{ request.form.get('lineset', '') }}">
                 </div>
                 <div>
+                    <label for="permit_option">Permits</label>
+                    <select id="permit_option" name="permit_option">
+                        <option value="0" {% if request.form.get('permit_option', '0') == '0' %}selected{% endif %}>No Permit ($0)</option>
+                        <option value="200_gas" {% if request.form.get('permit_option') == '200_gas' %}selected{% endif %}>Gas Permit ($200)</option>
+                        <option value="200_electrical" {% if request.form.get('permit_option') == '200_electrical' %}selected{% endif %}>Electrical Permit ($200)</option>
+                        <option value="400_both" {% if request.form.get('permit_option') == '400_both' %}selected{% endif %}>Gas &amp; Electrical Permit ($400)</option>
+                    </select>
+                </div>
+                <div>
                     <label for="slim_duct">Slim Duct Length (ft)</label>
                     <input id="slim_duct" name="slim_duct" inputmode="decimal" value="{{ request.form.get('slim_duct', '') }}">
                 </div>
@@ -184,6 +193,10 @@
                 <div class="summary-tile">
                     <h4>Lineset</h4>
                     <div class="money">${{ "{:,.2f}".format(result.lineset_cost) }}</div>
+                </div>
+                <div class="summary-tile">
+                    <h4>{{ result.permit_label }}</h4>
+                    <div class="money">${{ "{:,.2f}".format(result.permit) }}</div>
                 </div>
                 <div class="summary-tile">
                     <h4>Slim Duct</h4>
