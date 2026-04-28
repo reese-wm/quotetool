@@ -92,13 +92,7 @@
                 <button type="submit">Download PDF</button>
             </form>
             {% if result.email %}
-            <form method="POST" action="{{ url_for('send_install_quote_email') }}">
-                {% for key, value in result.items() %}
-                <input type="hidden" name="{{ key }}" value="{{ value }}">
-                {% endfor %}
-                <input type="hidden" name="send_target" value="customer">
-                <button type="submit">Email Customer</button>
-            </form>
+            <a class="button-link" href="{{ customer_mailto_link }}">Email Customer</a>
             {% endif %}
             <form method="POST" action="{{ url_for('send_install_quote_email') }}">
                 {% for key, value in result.items() %}
