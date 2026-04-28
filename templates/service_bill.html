@@ -37,13 +37,19 @@
         </div>
 
         <div class="print-block">
+            <h4>Equipment</h4>
+            <p><strong>Model Number:</strong> {{ result.equipment_model or "NOT ENTERED" }}</p>
+            <p><strong>Serial Number:</strong> {{ result.equipment_serial or "NOT ENTERED" }}</p>
+        </div>
+
+        <div class="print-block">
             <h4>Work Completed</h4>
-            <p>{{ result.work_completed or "No work summary entered." }}</p>
+            <p>{{ result.work_completed or "NO WORK SUMMARY ENTERED." }}</p>
         </div>
 
         <div class="print-block" style="margin-top:20px;">
             <h4>Materials / Parts Notes</h4>
-            <p>{{ result.materials_used or "No materials or part notes entered." }}</p>
+            <p>{{ result.materials_used or "NO MATERIALS OR PART NOTES ENTERED." }}</p>
         </div>
 
         <table>
