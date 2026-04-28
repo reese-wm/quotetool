@@ -31,7 +31,7 @@
             </div>
             <div class="print-block">
                 <h4>Quoted Equipment</h4>
-                <p><strong>Model:</strong> {{ result.model }}</p>
+                <p><strong>Model:</strong> {{ result.model or "NOT PROVIDED" }}</p>
                 <p><strong>Scope:</strong> Complete installation with labour and materials to suit.</p>
                 {% if result.permit_label and result.permit_label != "No Permit" %}
                 <p><strong>Includes:</strong> {{ result.permit_label }}</p>
@@ -47,7 +47,7 @@
 
         <div class="print-block">
             <h4>Job Notes</h4>
-            <p>{{ result.notes or "No additional notes provided." }}</p>
+            <p>{{ result.notes or "NO ADDITIONAL NOTES PROVIDED." }}</p>
         </div>
 
         <table>
@@ -56,7 +56,7 @@
                 <th class="amount">Amount</th>
             </tr>
             <tr>
-                <td>{{ result.model }} installation package</td>
+                <td>{{ result.model or "MODEL NOT PROVIDED" }} installation package</td>
                 <td class="amount">${{ "{:,.2f}".format(result.subtotal_with_commission | float) }}</td>
             </tr>
         </table>
