@@ -283,6 +283,9 @@ def build_install_quote_pdf_document(result):
             f"Estimator Email: {result.get('estimator_email') or 'Not provided'}",
             f"Model: {result.get('model') or 'Not provided'}",
         ]
+        permit_label = result.get("permit_label")
+        if permit_label and permit_label != "No Permit":
+            right_lines.append(f"Includes: {permit_label}")
 
         pdf.setFont("Helvetica-Bold", 11)
         pdf.drawString(54, y, "Customer Details")
