@@ -33,6 +33,9 @@
                 <h4>Quoted Equipment</h4>
                 <p><strong>Model:</strong> {{ result.model }}</p>
                 <p><strong>Scope:</strong> Complete installation with labour and materials to suit.</p>
+                {% if result.permit_label and result.permit_label != "No Permit" %}
+                <p><strong>Includes:</strong> {{ result.permit_label }}</p>
+                {% endif %}
             </div>
         </div>
 
