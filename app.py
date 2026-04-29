@@ -6,7 +6,8 @@ import re
 import smtplib
 from urllib.parse import quote as url_quote
 
-from flask import Flask, render_template, request, send_file
+from flask import Flask, make_response, render_template, request, send_file, url_for
+from PIL import Image
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
@@ -18,6 +19,9 @@ COMPANY_WEBSITE = "www.bigvalleyheating.ca"
 GAS_LICENSE = "LGA0003228"
 ELECTRICAL_LICENSE = "LEL0100644"
 OFFICE_EMAIL = "shopbigvalley@gmail.com"
+APP_SHORT_NAME = "BV Tools"
+APP_THEME_COLOR = "#18324a"
+APP_BACKGROUND_COLOR = "#f9fbfc"
 PERMIT_OPTIONS = {
     "0": "No Permit",
     "200_gas": "Gas Permit",
@@ -825,6 +829,81 @@ def build_purchase_order(data):
         "notes": notes,
         "amount": amount,
     }
+
+
+@app.route("/app-icon/<int:size>.png")
+def app_icon(size):
+    if size not in {192, 512}:
+        return ("Not found", 404)
+
+    logo_path = os.path.join(app.static_folder, "logo.png")
+    with Image.open(logo_path).convert("RGBA") as logo:
+        icon = Image.new("RGBA", (size, size), APP_THEME_COLOR)
+        target_width = int(size * 0.82)
+        target_height = int((logo.height / logo.width) * target_width)
+        resized_logo = logo.resize((target_width, target_height), Image.LANCZOS)
+        x_pos = (size - target_width) // 2
+        y_pos = (size - target_height) // 2
+        icon.alpha_composite(resized_logo, (x_pos, y_pos))
+
+        buffer = BytesIO()
+        icon.save(buffer, format="PNG")
+        buffer.seek(0)
+        return send_file(buffer, mimetype="image/png")
+
+
+@app.route("/manifest.webmanifest")
+def web_manifest():
+    manifest = {
+        "id": "/",
+        "name": "Big Valley Quote Suite",
+        "short_name": APP_SHORT_NAME,
+        "description": "Install quotes, service bills, and purchase orders for Big Valley Heating.",
+        "start_url": url_for("home"),
+        "scope": "/",
+        "display": "standalone",
+        "background_color": APP_BACKGROUND_COLOR,
+        "theme_color": APP_THEME_COLOR,
+        "orientation": "portrait-primary",
+        "prefer_related_applications": False,
+        "icons": [
+            {
+                "src": url_for("app_icon", size=192),
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable",
+            },
+            {
+                "src": url_for("app_icon", size=512),
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable",
+            },
+        ],
+    }
+    response = make_response(manifest)
+    response.mimetype = "application/manifest+json"
+    return response
+
+
+@app.route("/service-worker.js")
+def service_worker():
+    response = send_file(
+        os.path.join(app.static_folder, "service-worker.js"),
+        mimetype="application/javascript",
+    )
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
+@app.route("/offline")
+def offline():
+    return render_template("offline.html")
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.route("/")
