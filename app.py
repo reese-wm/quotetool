@@ -1,15 +1,24 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from io import BytesIO
+import json
 import os
 import re
 import smtplib
 from urllib.parse import quote as url_quote
+from zoneinfo import ZoneInfo
 
 from flask import Flask, make_response, render_template, request, send_file, url_for
 from PIL import Image
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+
+try:
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+except ImportError:
+    service_account = None
+    build = None
 
 app = Flask(__name__)
 
@@ -22,6 +31,10 @@ OFFICE_EMAIL = "shopbigvalley@gmail.com"
 APP_SHORT_NAME = "BV Tools"
 APP_THEME_COLOR = "#18324a"
 APP_BACKGROUND_COLOR = "#f9fbfc"
+DEFAULT_CALENDAR_TIMEZONE = "America/Vancouver"
+GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
+PHONE_PATTERN = re.compile(r"(?:\+?1[-.\s]*)?(?:\(?\d{3}\)?[-.\s]*)\d{3}[-.\s]*\d{4}")
+EMAIL_PATTERN = re.compile(r"[\w.+-]+@[\w.-]+\.\w+")
 PERMIT_OPTIONS = {
     "0": "No Permit",
     "200_gas": "Gas Permit",
@@ -32,6 +45,25 @@ SERVICE_DISCOUNT_OPTIONS = {
     "0": "No Discount",
     "10_senior": "Senior Discount",
     "20_annual": "Annual Service Discount",
+}
+SERVICE_FORM_DEFAULTS = {
+    "customer": "",
+    "service_date": "",
+    "address": "",
+    "technician": "",
+    "equipment_model": "",
+    "equipment_serial": "",
+    "phone": "",
+    "email": "",
+    "work_completed": "",
+    "materials_used": "",
+    "callout_fee": "0",
+    "labour": "0",
+    "parts": "0",
+    "discount_option": "0",
+    "misc": "0",
+    "tax_rate": "5",
+    "payment_terms": "Due upon receipt",
 }
 
 
@@ -93,6 +125,224 @@ def smtp_config():
 def smtp_is_ready():
     config = smtp_config()
     return bool(config["host"] and config["port"] and config["from_email"])
+
+
+def calendar_config():
+    return {
+        "service_account_json": os.getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNT_JSON")
+        or os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", ""),
+        "service_account_file": os.getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNT_FILE")
+        or os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", ""),
+        "calendar_id": os.getenv("GOOGLE_CALENDAR_ID", ""),
+        "timezone": os.getenv("GOOGLE_CALENDAR_TIMEZONE", DEFAULT_CALENDAR_TIMEZONE),
+    }
+
+
+def calendar_status():
+    config = calendar_config()
+
+    if service_account is None or build is None:
+        return False, "Google Calendar libraries are not installed yet."
+    if not config["service_account_json"] and not config["service_account_file"]:
+        return False, "Add a Google Calendar service account JSON secret and GOOGLE_CALENDAR_ID to enable job import."
+    if config["service_account_file"] and not os.path.exists(config["service_account_file"]):
+        return False, "Google Calendar service account file could not be found on this server."
+    if not config["calendar_id"]:
+        return False, "Add GOOGLE_CALENDAR_ID to enable job import."
+
+    return True, ""
+
+
+def calendar_is_ready():
+    ready, _ = calendar_status()
+    return ready
+
+
+def get_calendar_zone():
+    timezone_name = calendar_config()["timezone"] or DEFAULT_CALENDAR_TIMEZONE
+    for candidate in [timezone_name, DEFAULT_CALENDAR_TIMEZONE, "America/Los_Angeles", "UTC"]:
+        try:
+            return ZoneInfo(candidate)
+        except Exception:
+            continue
+    return timezone.utc
+
+
+def get_calendar_service():
+    ready, message = calendar_status()
+    if not ready:
+        raise RuntimeError(message)
+
+    config = calendar_config()
+    if config["service_account_json"]:
+        credentials = service_account.Credentials.from_service_account_info(
+            json.loads(config["service_account_json"]),
+            scopes=[GOOGLE_CALENDAR_SCOPE],
+        )
+    else:
+        credentials = service_account.Credentials.from_service_account_file(
+            config["service_account_file"],
+            scopes=[GOOGLE_CALENDAR_SCOPE],
+        )
+
+    return build("calendar", "v3", credentials=credentials, cache_discovery=False)
+
+
+def build_service_form_data(service_date=""):
+    form_data = dict(SERVICE_FORM_DEFAULTS)
+    form_data["service_date"] = service_date or form_data["service_date"]
+    return form_data
+
+
+def normalize_phone(value):
+    digits = re.sub(r"\D", "", value or "")
+    if len(digits) == 11 and digits.startswith("1"):
+        digits = digits[1:]
+    if len(digits) == 10:
+        return f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
+    return (value or "").strip()
+
+
+def extract_customer_and_phone(summary):
+    summary = (summary or "").strip()
+    matches = list(PHONE_PATTERN.finditer(summary))
+    if not matches:
+        return summary, ""
+
+    phone_match = matches[-1]
+    customer_name = summary[:phone_match.start()].strip(" -")
+    phone = normalize_phone(phone_match.group(0))
+    return customer_name or summary, phone
+
+
+def extract_calendar_email(description):
+    match = EMAIL_PATTERN.search(description or "")
+    return match.group(0) if match else ""
+
+
+def normalize_calendar_location(location):
+    lines = [line.strip(" -") for line in (location or "").splitlines() if line.strip()]
+    if not lines:
+        return ""
+
+    for line in reversed(lines):
+        if any(character.isdigit() for character in line):
+            return line
+    return lines[-1]
+
+
+def parse_google_datetime(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def format_clock_label(value):
+    if not value:
+        return ""
+    hour = value.strftime("%I").lstrip("0") or "0"
+    return f"{hour}:{value.strftime('%M %p')}"
+
+
+def build_calendar_time_label(start_data, end_data):
+    if start_data.get("date") and not start_data.get("dateTime"):
+        return "All day"
+
+    timezone = get_calendar_zone()
+    start_dt = parse_google_datetime(start_data.get("dateTime"))
+    end_dt = parse_google_datetime(end_data.get("dateTime"))
+    if not start_dt or not end_dt:
+        return ""
+
+    start_local = start_dt.astimezone(timezone)
+    end_local = end_dt.astimezone(timezone)
+    start_label = format_clock_label(start_local)
+    end_label = format_clock_label(end_local)
+    return f"{start_label} - {end_label}"
+
+
+def build_calendar_preview(description):
+    lines = [line.strip(" -") for line in (description or "").splitlines() if line.strip()]
+    if not lines:
+        return ""
+    return " | ".join(lines[:2])
+
+
+def transform_calendar_event(event):
+    summary = event.get("summary", "")
+    customer_name, phone = extract_customer_and_phone(summary)
+    start_data = event.get("start", {})
+    service_date = start_data.get("date", "")
+    if start_data.get("dateTime"):
+        start_dt = parse_google_datetime(start_data["dateTime"])
+        if start_dt:
+            service_date = start_dt.astimezone(get_calendar_zone()).strftime("%Y-%m-%d")
+
+    description = event.get("description", "")
+    return {
+        "id": event.get("id", ""),
+        "summary": summary,
+        "customer": customer_name,
+        "phone": phone,
+        "address": normalize_calendar_location(event.get("location", "")),
+        "email": extract_calendar_email(description),
+        "service_date": service_date,
+        "time_label": build_calendar_time_label(start_data, event.get("end", {})),
+        "preview": build_calendar_preview(description),
+    }
+
+
+def fetch_calendar_jobs_for_date(service_date):
+    calendar_service = get_calendar_service()
+    timezone = get_calendar_zone()
+
+    try:
+        target_date = datetime.strptime(service_date, "%Y-%m-%d").date()
+    except ValueError:
+        target_date = datetime.now(timezone).date()
+
+    day_start = datetime.combine(target_date, datetime.min.time(), tzinfo=timezone)
+    day_end = day_start + timedelta(days=1)
+
+    response = calendar_service.events().list(
+        calendarId=calendar_config()["calendar_id"],
+        timeMin=day_start.isoformat(),
+        timeMax=day_end.isoformat(),
+        singleEvents=True,
+        orderBy="startTime",
+    ).execute()
+
+    return [transform_calendar_event(event) for event in response.get("items", [])]
+
+
+def get_selected_calendar_job(service_date, event_id):
+    if not event_id:
+        return None
+
+    for job in fetch_calendar_jobs_for_date(service_date):
+        if job["id"] == event_id:
+            return job
+    return None
+
+
+def apply_calendar_job_to_form(job, service_date):
+    form_data = build_service_form_data(service_date)
+    if not job:
+        return form_data
+
+    form_data.update(
+        {
+            "customer": job["customer"],
+            "service_date": job["service_date"] or service_date,
+            "address": job["address"],
+            "phone": job["phone"],
+            "email": job["email"],
+        }
+    )
+    return form_data
 
 
 def build_mailto_link(recipient, subject, body):
@@ -969,7 +1219,39 @@ def service_quote():
             result=result,
             customer_mailto_link=build_service_bill_customer_mailto(result),
         )
-    return render_template("service_quote.html")
+
+    default_service_date = datetime.now(get_calendar_zone()).strftime("%Y-%m-%d")
+    calendar_date = request.args.get("calendar_date") or default_service_date
+    selected_calendar_event_id = request.args.get("calendar_event_id", "")
+    calendar_ready, calendar_status_message = calendar_status()
+    calendar_jobs = []
+    selected_calendar_job = None
+    form_data = build_service_form_data(calendar_date)
+
+    if calendar_ready:
+        try:
+            calendar_jobs = fetch_calendar_jobs_for_date(calendar_date)
+            selected_calendar_job = next(
+                (job for job in calendar_jobs if job["id"] == selected_calendar_event_id),
+                None,
+            )
+            form_data = apply_calendar_job_to_form(selected_calendar_job, calendar_date)
+            if selected_calendar_event_id and not selected_calendar_job:
+                calendar_status_message = "That calendar job could not be found for the selected date."
+        except Exception as exc:
+            calendar_ready = False
+            calendar_status_message = f"Calendar import is unavailable right now: {exc}"
+
+    return render_template(
+        "service_quote.html",
+        form_data=form_data,
+        calendar_ready=calendar_ready,
+        calendar_status_message=calendar_status_message,
+        calendar_jobs=calendar_jobs,
+        calendar_date=calendar_date,
+        selected_calendar_event_id=selected_calendar_event_id,
+        selected_calendar_job=selected_calendar_job,
+    )
 
 
 @app.route("/service-quote/email", methods=["POST"])
