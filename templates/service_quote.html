@@ -12,50 +12,29 @@
 <div class="form-layout">
     <div class="form-stack">
         <section class="form-section">
-            <h3>Job Calendar Import</h3>
-            <p class="section-hint">Pull the scheduled customer details straight from your Google job calendar before building the service bill.</p>
+            <h3>Paste Job Details</h3>
+            <p class="section-hint">Open the schedule, copy the job details, then paste them here to fill the customer fields before building the service bill.</p>
 
-            <form method="GET" class="form-grid" style="margin-bottom:14px;">
+            <div class="form-grid" style="margin-bottom:14px;">
                 <div>
                     <label for="calendar_date">Job Date</label>
                     <input id="calendar_date" name="calendar_date" type="date" value="{{ calendar_date }}">
                 </div>
                 <div style="display:flex; align-items:flex-end;">
-                    <button type="submit">Load Scheduled Jobs</button>
+                    <a id="google_calendar_link" class="button-link" href="https://calendar.google.com/calendar/u/0/r/day" target="_blank" rel="noopener noreferrer">Open Google Calendar</a>
                 </div>
-            </form>
+            </div>
 
-            {% if calendar_status_message %}
-                <p class="muted-note" style="margin-top:0;">{{ calendar_status_message }}</p>
-            {% endif %}
-
-            {% if calendar_ready and calendar_jobs %}
-                <div class="summary-grid" style="grid-template-columns:1fr; gap:14px; margin-top:10px;">
-                    {% for job in calendar_jobs %}
-                        <div class="summary-tile">
-                            <h4>{{ job.customer or job.summary }}</h4>
-                            <p style="margin:0 0 6px;"><strong>{{ job.time_label or "Scheduled Job" }}</strong></p>
-                            {% if job.phone %}
-                                <p style="margin:0 0 6px;">{{ job.phone }}</p>
-                            {% endif %}
-                            {% if job.address %}
-                                <p style="margin:0 0 6px;">{{ job.address }}</p>
-                            {% endif %}
-                            {% if job.preview %}
-                                <p style="margin:0 0 14px;">{{ job.preview }}</p>
-                            {% endif %}
-                            {% if selected_calendar_event_id == job.id %}
-                                <p style="margin:0 0 10px; color:var(--navy); font-weight:700;">Imported into the form below.</p>
-                            {% endif %}
-                            <a class="button-link" href="{{ url_for('service_quote', calendar_date=calendar_date, calendar_event_id=job.id) }}">Import Into Bill</a>
-                        </div>
-                    {% endfor %}
+            <div class="form-grid single">
+                <div>
+                    <label for="job_details_paste">Copied Job Details</label>
+                    <textarea id="job_details_paste" placeholder="Paste the copied calendar event text here."></textarea>
                 </div>
-            {% elif calendar_ready %}
-                <p class="muted-note" style="margin-top:10px;">No scheduled jobs were found for {{ calendar_date }}.</p>
-            {% else %}
-                <p class="muted-note" style="margin-top:10px;">Once the calendar is connected in the app config, this section will list the day's scheduled jobs and let your techs pull customer details straight into the bill.</p>
-            {% endif %}
+            </div>
+            <div class="action-row" style="margin-top:14px;">
+                <button id="fill_job_details" type="button">Fill Customer Details</button>
+            </div>
+            <p id="job_details_status" class="muted-note" style="margin-top:10px;"></p>
         </section>
 
         <form method="POST" class="form-stack">
@@ -157,11 +136,140 @@
         <h3>Why this fits the field</h3>
         <p>The layout is mobile friendly and focused on just enough information to hand a clean summary to the customer.</p>
         <ul>
-            <li>Import customer details from the day's schedule before the tech starts billing.</li>
+            <li>Paste customer details from the day's schedule before the tech starts billing.</li>
             <li>No invoice numbering or back-office storage built in.</li>
             <li>Simple enough for phone use after a job is done.</li>
             <li>Printable bill view for emailing, saving, or sharing.</li>
         </ul>
     </aside>
 </div>
+<script>
+    (function () {
+        const calendarDate = document.getElementById("calendar_date");
+        const calendarLink = document.getElementById("google_calendar_link");
+        const pasteBox = document.getElementById("job_details_paste");
+        const fillButton = document.getElementById("fill_job_details");
+        const status = document.getElementById("job_details_status");
+
+        function field(id) {
+            return document.getElementById(id);
+        }
+
+        function setField(id, value) {
+            const input = field(id);
+            if (input && value) {
+                input.value = value.trim();
+                return true;
+            }
+            return false;
+        }
+
+        function updateCalendarLink() {
+            const value = calendarDate.value;
+            if (!value) {
+                calendarLink.href = "https://calendar.google.com/calendar/u/0/r/day";
+                return;
+            }
+
+            const parts = value.split("-");
+            calendarLink.href = `https://calendar.google.com/calendar/u/0/r/day/${Number(parts[0])}/${Number(parts[1])}/${Number(parts[2])}`;
+        }
+
+        function findLabeledLine(lines, labels) {
+            const pattern = new RegExp(`^(?:${labels.join("|")})\\s*[:\\-]\\s*(.+)$`, "i");
+            for (const line of lines) {
+                const match = line.match(pattern);
+                if (match && match[1]) {
+                    return match[1].trim();
+                }
+            }
+            return "";
+        }
+
+        function findAddress(lines) {
+            const labeled = findLabeledLine(lines, ["address", "service address", "location"]);
+            if (labeled) {
+                return labeled;
+            }
+
+            const streetPattern = /\b\d{1,6}\s+.+\b(st|street|ave|avenue|rd|road|dr|drive|cres|crescent|ct|court|pl|place|way|lane|ln|blvd|boulevard|hwy|highway)\b/i;
+            return lines.find((line) => streetPattern.test(line)) || "";
+        }
+
+        function findDate(text) {
+            const isoMatch = text.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/);
+            if (isoMatch) {
+                return `${isoMatch[1]}-${isoMatch[2].padStart(2, "0")}-${isoMatch[3].padStart(2, "0")}`;
+            }
+
+            const slashMatch = text.match(/\b(\d{1,2})\/(\d{1,2})\/(20\d{2})\b/);
+            if (slashMatch) {
+                return `${slashMatch[3]}-${slashMatch[1].padStart(2, "0")}-${slashMatch[2].padStart(2, "0")}`;
+            }
+
+            return "";
+        }
+
+        function findCustomer(lines, phone, email, address) {
+            const labeled = findLabeledLine(lines, ["customer", "customer name", "client", "name"]);
+            if (labeled) {
+                return labeled.replace(phone, "").replace(email, "").trim();
+            }
+
+            const skipPattern = /^(when|where|location|address|description|notes|phone|email|tech|technician|calendar|service|job date)\b/i;
+            return lines.find((line) => {
+                if (skipPattern.test(line)) {
+                    return false;
+                }
+                if (line === address || line.includes("@") || /\d{3}[-.\s)]*\d{3}[-.\s]*\d{4}/.test(line)) {
+                    return false;
+                }
+                return /[A-Za-z]/.test(line);
+            }) || "";
+        }
+
+        function parseJobDetails(text) {
+            const lines = text
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean);
+            const compactText = lines.join("\n");
+            const phone = (compactText.match(/(?:\+?1[-.\s]*)?(?:\(?\d{3}\)?[-.\s]*)\d{3}[-.\s]*\d{4}/) || [""])[0];
+            const email = (compactText.match(/[\w.+-]+@[\w.-]+\.\w+/) || [""])[0];
+            const address = findAddress(lines);
+
+            return {
+                customer: findCustomer(lines, phone, email, address),
+                service_date: findDate(compactText) || calendarDate.value,
+                address: address,
+                technician: findLabeledLine(lines, ["tech", "technician"]),
+                phone: phone,
+                email: email,
+                equipment_model: findLabeledLine(lines, ["model", "equipment model", "equipment model number"]),
+                equipment_serial: findLabeledLine(lines, ["serial", "equipment serial", "equipment serial number"]),
+            };
+        }
+
+        function fillJobDetails() {
+            const text = pasteBox.value.trim();
+            if (!text) {
+                status.textContent = "Paste the copied calendar details first.";
+                return;
+            }
+
+            const details = parseJobDetails(text);
+            const filled = Object.entries(details)
+                .filter(([id, value]) => setField(id, value))
+                .map(([id]) => id.replace("_", " "));
+
+            status.textContent = filled.length
+                ? `Filled ${filled.length} field${filled.length === 1 ? "" : "s"}. Check the customer info before generating the bill.`
+                : "I couldn't spot customer details in that text. You can still paste them into the fields below.";
+        }
+
+        updateCalendarLink();
+        calendarDate.addEventListener("change", updateCalendarLink);
+        fillButton.addEventListener("click", fillJobDetails);
+    })();
+</script>
 {% endblock %}
