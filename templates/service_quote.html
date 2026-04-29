@@ -10,104 +10,154 @@
 </div>
 
 <div class="form-layout">
-    <form method="POST" class="form-stack">
+    <div class="form-stack">
         <section class="form-section">
-            <h3>Customer & Visit</h3>
-            <div class="form-grid">
+            <h3>Job Calendar Import</h3>
+            <p class="section-hint">Pull the scheduled customer details straight from your Google job calendar before building the service bill.</p>
+
+            <form method="GET" class="form-grid" style="margin-bottom:14px;">
                 <div>
-                    <label for="customer">Customer Name</label>
-                    <input id="customer" name="customer" required>
+                    <label for="calendar_date">Job Date</label>
+                    <input id="calendar_date" name="calendar_date" type="date" value="{{ calendar_date }}">
                 </div>
-                <div>
-                    <label for="service_date">Service Date</label>
-                    <input id="service_date" name="service_date" type="date" required>
+                <div style="display:flex; align-items:flex-end;">
+                    <button type="submit">Load Scheduled Jobs</button>
                 </div>
-                <div>
-                    <label for="address">Service Address</label>
-                    <input id="address" name="address">
+            </form>
+
+            {% if calendar_status_message %}
+                <p class="muted-note" style="margin-top:0;">{{ calendar_status_message }}</p>
+            {% endif %}
+
+            {% if calendar_ready and calendar_jobs %}
+                <div class="summary-grid" style="grid-template-columns:1fr; gap:14px; margin-top:10px;">
+                    {% for job in calendar_jobs %}
+                        <div class="summary-tile">
+                            <h4>{{ job.customer or job.summary }}</h4>
+                            <p style="margin:0 0 6px;"><strong>{{ job.time_label or "Scheduled Job" }}</strong></p>
+                            {% if job.phone %}
+                                <p style="margin:0 0 6px;">{{ job.phone }}</p>
+                            {% endif %}
+                            {% if job.address %}
+                                <p style="margin:0 0 6px;">{{ job.address }}</p>
+                            {% endif %}
+                            {% if job.preview %}
+                                <p style="margin:0 0 14px;">{{ job.preview }}</p>
+                            {% endif %}
+                            {% if selected_calendar_event_id == job.id %}
+                                <p style="margin:0 0 10px; color:var(--navy); font-weight:700;">Imported into the form below.</p>
+                            {% endif %}
+                            <a class="button-link" href="{{ url_for('service_quote', calendar_date=calendar_date, calendar_event_id=job.id) }}">Import Into Bill</a>
+                        </div>
+                    {% endfor %}
                 </div>
-                <div>
-                    <label for="technician">Technician</label>
-                    <input id="technician" name="technician">
-                </div>
-                <div>
-                    <label for="equipment_model">Equipment Model Number</label>
-                    <input id="equipment_model" name="equipment_model" style="text-transform:uppercase;">
-                </div>
-                <div>
-                    <label for="equipment_serial">Equipment Serial Number</label>
-                    <input id="equipment_serial" name="equipment_serial" style="text-transform:uppercase;">
-                </div>
-                <div>
-                    <label for="phone">Phone</label>
-                    <input id="phone" name="phone">
-                </div>
-                <div>
-                    <label for="email">Email</label>
-                    <input id="email" name="email">
-                </div>
-            </div>
+            {% elif calendar_ready %}
+                <p class="muted-note" style="margin-top:10px;">No scheduled jobs were found for {{ calendar_date }}.</p>
+            {% else %}
+                <p class="muted-note" style="margin-top:10px;">Once the calendar is connected in the app config, this section will list the day's scheduled jobs and let your techs pull customer details straight into the bill.</p>
+            {% endif %}
         </section>
 
-        <section class="form-section">
-            <h3>Work Summary</h3>
-            <div class="form-grid single">
-                <div>
-                    <label for="work_completed">Work Completed</label>
-                    <textarea id="work_completed" name="work_completed" placeholder="Describe the diagnosis, repair, maintenance, or service completed." style="text-transform:uppercase;"></textarea>
+        <form method="POST" class="form-stack">
+            <section class="form-section">
+                <h3>Customer & Visit</h3>
+                <div class="form-grid">
+                    <div>
+                        <label for="customer">Customer Name</label>
+                        <input id="customer" name="customer" required value="{{ form_data.get('customer', '') }}">
+                    </div>
+                    <div>
+                        <label for="service_date">Service Date</label>
+                        <input id="service_date" name="service_date" type="date" required value="{{ form_data.get('service_date', '') }}">
+                    </div>
+                    <div>
+                        <label for="address">Service Address</label>
+                        <input id="address" name="address" value="{{ form_data.get('address', '') }}">
+                    </div>
+                    <div>
+                        <label for="technician">Technician</label>
+                        <input id="technician" name="technician" value="{{ form_data.get('technician', '') }}">
+                    </div>
+                    <div>
+                        <label for="equipment_model">Equipment Model Number</label>
+                        <input id="equipment_model" name="equipment_model" style="text-transform:uppercase;" value="{{ form_data.get('equipment_model', '') }}">
+                    </div>
+                    <div>
+                        <label for="equipment_serial">Equipment Serial Number</label>
+                        <input id="equipment_serial" name="equipment_serial" style="text-transform:uppercase;" value="{{ form_data.get('equipment_serial', '') }}">
+                    </div>
+                    <div>
+                        <label for="phone">Phone</label>
+                        <input id="phone" name="phone" value="{{ form_data.get('phone', '') }}">
+                    </div>
+                    <div>
+                        <label for="email">Email</label>
+                        <input id="email" name="email" value="{{ form_data.get('email', '') }}">
+                    </div>
                 </div>
-                <div>
-                    <label for="materials_used">Materials / Parts Notes</label>
-                    <textarea id="materials_used" name="materials_used" placeholder="List parts used, special materials, or anything the customer should see on the bill." style="text-transform:uppercase;"></textarea>
-                </div>
-            </div>
-        </section>
+            </section>
 
-        <section class="form-section">
-            <h3>Charges</h3>
-            <div class="form-grid">
-                <div>
-                    <label for="callout_fee">Call-Out Fee</label>
-                    <input id="callout_fee" name="callout_fee" inputmode="decimal" value="0">
+            <section class="form-section">
+                <h3>Work Summary</h3>
+                <div class="form-grid single">
+                    <div>
+                        <label for="work_completed">Work Completed</label>
+                        <textarea id="work_completed" name="work_completed" placeholder="Describe the diagnosis, repair, maintenance, or service completed." style="text-transform:uppercase;">{{ form_data.get('work_completed', '') }}</textarea>
+                    </div>
+                    <div>
+                        <label for="materials_used">Materials / Parts Notes</label>
+                        <textarea id="materials_used" name="materials_used" placeholder="List parts used, special materials, or anything the customer should see on the bill." style="text-transform:uppercase;">{{ form_data.get('materials_used', '') }}</textarea>
+                    </div>
                 </div>
-                <div>
-                    <label for="labour">Labour</label>
-                    <input id="labour" name="labour" inputmode="decimal" value="0">
-                </div>
-                <div>
-                    <label for="parts">Parts</label>
-                    <input id="parts" name="parts" inputmode="decimal" value="0">
-                </div>
-                <div>
-                    <label for="discount_option">Discount</label>
-                    <select id="discount_option" name="discount_option">
-                        <option value="0">No Discount</option>
-                        <option value="10_senior">Senior Discount (-$10)</option>
-                        <option value="20_annual">Annual Service Discount (-$20)</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="misc">Miscellaneous</label>
-                    <input id="misc" name="misc" inputmode="decimal" value="0">
-                </div>
-                <div>
-                    <label for="tax_rate">Tax Rate (%)</label>
-                    <input id="tax_rate" name="tax_rate" inputmode="decimal" value="5">
-                </div>
-                <div>
-                    <label for="payment_terms">Payment Terms</label>
-                    <input id="payment_terms" name="payment_terms" value="Due upon receipt">
-                </div>
-            </div>
-        </section>
+            </section>
 
-        <button type="submit">Generate Service Bill</button>
-    </form>
+            <section class="form-section">
+                <h3>Charges</h3>
+                <div class="form-grid">
+                    <div>
+                        <label for="callout_fee">Call-Out Fee</label>
+                        <input id="callout_fee" name="callout_fee" inputmode="decimal" value="{{ form_data.get('callout_fee', '0') }}">
+                    </div>
+                    <div>
+                        <label for="labour">Labour</label>
+                        <input id="labour" name="labour" inputmode="decimal" value="{{ form_data.get('labour', '0') }}">
+                    </div>
+                    <div>
+                        <label for="parts">Parts</label>
+                        <input id="parts" name="parts" inputmode="decimal" value="{{ form_data.get('parts', '0') }}">
+                    </div>
+                    <div>
+                        <label for="discount_option">Discount</label>
+                        <select id="discount_option" name="discount_option">
+                            <option value="0" {% if form_data.get('discount_option') == '0' %}selected{% endif %}>No Discount</option>
+                            <option value="10_senior" {% if form_data.get('discount_option') == '10_senior' %}selected{% endif %}>Senior Discount (-$10)</option>
+                            <option value="20_annual" {% if form_data.get('discount_option') == '20_annual' %}selected{% endif %}>Annual Service Discount (-$20)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="misc">Miscellaneous</label>
+                        <input id="misc" name="misc" inputmode="decimal" value="{{ form_data.get('misc', '0') }}">
+                    </div>
+                    <div>
+                        <label for="tax_rate">Tax Rate (%)</label>
+                        <input id="tax_rate" name="tax_rate" inputmode="decimal" value="{{ form_data.get('tax_rate', '5') }}">
+                    </div>
+                    <div>
+                        <label for="payment_terms">Payment Terms</label>
+                        <input id="payment_terms" name="payment_terms" value="{{ form_data.get('payment_terms', 'Due upon receipt') }}">
+                    </div>
+                </div>
+            </section>
+
+            <button type="submit">Generate Service Bill</button>
+        </form>
+    </div>
 
     <aside class="sidebar-card">
         <h3>Why this fits the field</h3>
         <p>The layout is mobile friendly and focused on just enough information to hand a clean summary to the customer.</p>
         <ul>
+            <li>Import customer details from the day's schedule before the tech starts billing.</li>
             <li>No invoice numbering or back-office storage built in.</li>
             <li>Simple enough for phone use after a job is done.</li>
             <li>Printable bill view for emailing, saving, or sharing.</li>
