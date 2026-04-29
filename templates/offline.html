@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}Offline | Big Valley Tools{% endblock %}
+
+{% block content %}
+<div class="hero" style="margin-bottom:24px;">
+    <span class="eyebrow">Offline</span>
+    <h2>You're offline right now.</h2>
+    <p>The quote suite needs a connection for live forms and email delivery, but once you're back online you can jump right back in.</p>
+</div>
+
+<div class="page-card">
+    <div class="tool-grid" style="margin-top:0;">
+        <div class="tool-card">
+            <div class="badge">Tip</div>
+            <h3>Reconnect And Retry</h3>
+            <p>When service comes back, refresh this page and reopen the tool you need.</p>
+            <a class="cta" href="{{ url_for('home') }}">Return Home</a>
+        </div>
+        <div class="tool-card">
+            <div class="badge">Field Use</div>
+            <h3>Keep Customer Notes Ready</h3>
+            <p>If you lose signal on site, jot the details in your phone notes and paste them in once the app reconnects.</p>
+        </div>
+        <div class="tool-card">
+            <div class="badge">Delivery</div>
+            <h3>Email Sends Need Internet</h3>
+            <p>PDF generation and office delivery will resume once the app has a live connection again.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
