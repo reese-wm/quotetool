@@ -24,6 +24,11 @@ PERMIT_OPTIONS = {
     "200_electrical": "Electrical Permit",
     "400_both": "Gas & Electrical Permit",
 }
+SERVICE_DISCOUNT_OPTIONS = {
+    "0": "No Discount",
+    "10_senior": "Senior Discount",
+    "20_annual": "Annual Service Discount",
+}
 
 
 def load_local_env():
@@ -337,11 +342,14 @@ def build_service_bill_pdf_document(result):
             ("Labour", format_currency(result.get("labour"))),
             ("Parts", format_currency(result.get("parts"))),
             ("Miscellaneous", format_currency(result.get("misc"))),
+            (result.get("discount_label") or "Discount", f"-{format_currency(result.get('discount'))}"),
             ("Subtotal", format_currency(result.get("subtotal"))),
             (f"Tax ({parse_number(result.get('tax_rate')):.2f}%)", format_currency(result.get("tax"))),
             ("Total", format_currency(result.get("total"))),
         ]
         for label, value in charge_lines:
+            if label == "No Discount":
+                continue
             draw_line(pdf, label, 54, y)
             pdf.drawRightString(558, y, value)
             y -= 14
@@ -425,6 +433,7 @@ def company_context():
         "electrical_license": ELECTRICAL_LICENSE,
         "office_email": OFFICE_EMAIL,
         "smtp_ready": smtp_is_ready(),
+        "service_payment_url": os.getenv("SERVICE_PAY_NOW_URL", "#"),
     }
 
 
@@ -543,6 +552,8 @@ def build_service_bill_email_content(result, send_to_office=False):
     equipment_serial = normalize_upper_text(result.get("equipment_serial")) or "NOT ENTERED"
     work_completed = normalize_upper_text(result.get("work_completed")) or "NOT PROVIDED"
     materials_used = normalize_upper_text(result.get("materials_used")) or "NONE"
+    discount_label = result.get("discount_label") or "No Discount"
+    discount_text = f"-{format_currency(result.get('discount'))}" if parse_number(result.get("discount")) else "$0.00"
 
     if send_to_office:
         return {
@@ -557,6 +568,7 @@ def build_service_bill_email_content(result, send_to_office=False):
                 f"Technician: {result.get('technician') or 'Not provided'}\n"
                 f"Service Total: {total}\n"
                 f"Address: {result.get('address') or 'Not provided'}\n"
+                f"Discount: {discount_label} ({discount_text})\n"
                 f"Equipment Model: {equipment_model}\n"
                 f"Equipment Serial: {equipment_serial}\n"
                 f"Work Completed: {work_completed}\n"
@@ -574,6 +586,7 @@ def build_service_bill_email_content(result, send_to_office=False):
             f"Service total: {total}\n"
             f"Technician: {result.get('technician') or 'Not provided'}\n"
             f"Service address: {result.get('address') or 'Not provided'}\n\n"
+            f"Discount: {discount_label} ({discount_text})\n"
             f"Equipment model: {equipment_model}\n"
             f"Equipment serial: {equipment_serial}\n\n"
             f"If you have any questions, please contact {OFFICE_EMAIL}.\n\n"
@@ -596,6 +609,8 @@ def build_service_bill_customer_mailto(result):
     equipment_serial = normalize_upper_text(result.get("equipment_serial")) or "NOT ENTERED"
     work_completed = normalize_upper_text(result.get("work_completed")) or "NOT PROVIDED"
     materials_used = normalize_upper_text(result.get("materials_used")) or "NONE"
+    discount_label = result.get("discount_label") or "No Discount"
+    discount_text = f"-{format_currency(result.get('discount'))}" if parse_number(result.get("discount")) else "$0.00"
 
     subject = f"Customer Service Bill Draft - {customer_name} - {service_date}"
     body = (
@@ -606,6 +621,7 @@ def build_service_bill_customer_mailto(result):
         f"Service Date: {service_date}\n"
         f"Service Total: {total}\n"
         f"Technician: {result.get('technician') or 'Not provided'}\n"
+        f"Discount: {discount_label} ({discount_text})\n"
         f"Equipment Model: {equipment_model}\n"
         f"Equipment Serial: {equipment_serial}\n"
         f"Work Completed: {work_completed}\n"
@@ -739,10 +755,13 @@ def build_service_bill(data):
     labour = parse_number(data.get("labour"))
     parts = parse_number(data.get("parts"))
     misc = parse_number(data.get("misc"))
+    discount_option = data.get("discount_option", "0")
+    discount = parse_number((discount_option or "0").split("_", 1)[0])
+    discount_label = SERVICE_DISCOUNT_OPTIONS.get(discount_option, "No Discount")
     tax_rate = parse_number(data.get("tax_rate"), 5)
     payment_terms = data.get("payment_terms", "Due upon receipt")
 
-    subtotal = callout_fee + labour + parts + misc
+    subtotal = callout_fee + labour + parts + misc - discount
     tax = subtotal * (tax_rate / 100)
     total = subtotal + tax
 
@@ -761,6 +780,9 @@ def build_service_bill(data):
         "labour": labour,
         "parts": parts,
         "misc": misc,
+        "discount": discount,
+        "discount_option": discount_option,
+        "discount_label": discount_label,
         "tax_rate": tax_rate,
         "tax": tax,
         "subtotal": subtotal,
