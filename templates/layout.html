@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#18324a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="BV Tools">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="{{ url_for('web_manifest') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('app_icon', size=192) }}">
+    <link rel="apple-touch-icon" href="{{ url_for('app_icon', size=192) }}">
     <title>{% block title %}Big Valley Tools{% endblock %}</title>
     <style>
         :root {
@@ -563,5 +571,12 @@
 
         {% block content %}{% endblock %}
     </div>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", function () {
+                navigator.serviceWorker.register("{{ url_for('service_worker') }}");
+            });
+        }
+    </script>
 </body>
 </html>
