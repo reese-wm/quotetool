@@ -69,6 +69,12 @@
                 <td>Parts</td>
                 <td class="amount">${{ "{:,.2f}".format(result.parts) }}</td>
             </tr>
+            {% if result.discount and result.discount|float > 0 %}
+            <tr>
+                <td>{{ result.discount_label }}</td>
+                <td class="amount">-${{ "{:,.2f}".format(result.discount) }}</td>
+            </tr>
+            {% endif %}
             <tr>
                 <td>Miscellaneous</td>
                 <td class="amount">${{ "{:,.2f}".format(result.misc) }}</td>
@@ -104,6 +110,7 @@
             {% if result.email %}
             <a class="button-link" href="{{ customer_mailto_link }}">Email Customer</a>
             {% endif %}
+            <a class="button-link" href="{{ service_payment_url }}" {% if service_payment_url != "#" %}target="_blank" rel="noopener noreferrer"{% endif %}>Pay Now</a>
             <form method="POST" action="{{ url_for('send_service_bill_email') }}">
                 {% for key, value in result.items() %}
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
