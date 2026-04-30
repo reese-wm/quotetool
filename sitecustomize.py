@@ -61,13 +61,6 @@ if Canvas is not None:
             return y - shift
         return y
 
-    def _shift_after_section_heading(self, x, y):
-        heading_y = getattr(self, "_bv_section_heading_y", None)
-        if heading_y is not None and x <= 60 and 0 < heading_y - y <= 24:
-            self._bv_section_heading_y = None
-            return y - 6
-        return y
-
     def _draw_service_address_safely(self, x, y, text, *args, **kwargs):
         if isinstance(text, str) and text.startswith("Service Address:") and x <= 60:
             street, city_line = _split_service_address(text.split(":", 1)[1])
@@ -80,15 +73,14 @@ if Canvas is not None:
 
         shifted_y = _shift_after_service_address(self, y)
         if text in {"Work Completed", "Materials / Parts Notes"} and x <= 60:
-            self._bv_section_heading_y = shifted_y
+            shifted_y += 6
         return _reportlab_draw_string(self, x, shifted_y, text, *args, **kwargs)
 
     def _draw_right_string_with_shift(self, x, y, text, *args, **kwargs):
         return _reportlab_draw_right_string(self, x, _shift_after_service_address(self, y), text, *args, **kwargs)
 
     def _begin_text_with_shift(self, x=0, y=0, direction=None):
-        shifted_y = _shift_after_section_heading(self, x, _shift_after_service_address(self, y))
-        return _reportlab_begin_text(self, x, shifted_y, direction=direction)
+        return _reportlab_begin_text(self, x, _shift_after_service_address(self, y), direction=direction)
 
     def _show_page_and_reset_shift(self):
         if hasattr(self, "_bv_service_address_shift"):
