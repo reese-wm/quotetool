@@ -13,7 +13,7 @@
     <div class="form-stack">
         <section class="form-section">
             <h3>Paste Job Details</h3>
-            <p class="section-hint">Open the schedule, copy the job details, then paste them here to fill the customer fields before building the service bill.</p>
+            <p class="section-hint">Open the schedule, copy the job details, then paste them here to fill customer name, phone, work completed, and service address.</p>
 
             <div class="form-grid" style="margin-bottom:14px;">
                 <div>
@@ -175,57 +175,69 @@
             calendarLink.href = `https://calendar.google.com/calendar/u/0/r/day/${Number(parts[0])}/${Number(parts[1])}/${Number(parts[2])}`;
         }
 
-        function findLabeledLine(lines, labels) {
-            const pattern = new RegExp(`^(?:${labels.join("|")})\\s*[:\\-]\\s*(.+)$`, "i");
-            for (const line of lines) {
-                const match = line.match(pattern);
-                if (match && match[1]) {
-                    return match[1].trim();
+        function findAddress(lines) {
+            const locationIndex = lines.findIndex((line) => /^location\b/i.test(line));
+            if (locationIndex >= 0) {
+                const locationLine = lines[locationIndex].replace(/^location\s*[:\-]?\s*/i, "").trim();
+                if (isStreetAddress(locationLine)) {
+                    return locationLine;
+                }
+
+                const nextLocationLine = lines
+                    .slice(locationIndex + 1)
+                    .find((line) => isStreetAddress(line));
+                if (nextLocationLine) {
+                    return nextLocationLine;
                 }
             }
-            return "";
+
+            return lines.find((line) => isStreetAddress(line)) || "";
         }
 
-        function findAddress(lines) {
-            const labeled = findLabeledLine(lines, ["address", "service address", "location"]);
-            if (labeled) {
-                return labeled;
-            }
-
-            const streetPattern = /\b\d{1,6}\s+.+\b(st|street|ave|avenue|rd|road|dr|drive|cres|crescent|ct|court|pl|place|way|lane|ln|blvd|boulevard|hwy|highway)\b/i;
-            return lines.find((line) => streetPattern.test(line)) || "";
+        function isStreetAddress(line) {
+            return /\b\d{1,6}\s+.+\b(st|street|ave|avenue|rd|road|dr|drive|cres|crescent|ct|court|pl|place|way|lane|ln|blvd|boulevard|hwy|highway)\b/i.test(line);
         }
 
-        function findDate(text) {
-            const isoMatch = text.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/);
-            if (isoMatch) {
-                return `${isoMatch[1]}-${isoMatch[2].padStart(2, "0")}-${isoMatch[3].padStart(2, "0")}`;
+        function findCustomer(lines, phone) {
+            const lineWithPhone = lines.find((line) => phone && line.includes(phone));
+            if (lineWithPhone) {
+                return lineWithPhone
+                    .replace(phone, "")
+                    .replace(/[-\u2013\u2014|\u2022]+/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
             }
 
-            const slashMatch = text.match(/\b(\d{1,2})\/(\d{1,2})\/(20\d{2})\b/);
-            if (slashMatch) {
-                return `${slashMatch[3]}-${slashMatch[1].padStart(2, "0")}-${slashMatch[2].padStart(2, "0")}`;
-            }
-
-            return "";
-        }
-
-        function findCustomer(lines, phone, email, address) {
-            const labeled = findLabeledLine(lines, ["customer", "customer name", "client", "name"]);
-            if (labeled) {
-                return labeled.replace(phone, "").replace(email, "").trim();
-            }
-
-            const skipPattern = /^(when|where|location|address|description|notes|phone|email|tech|technician|calendar|service|job date)\b/i;
             return lines.find((line) => {
-                if (skipPattern.test(line)) {
+                if (isIgnoredCalendarLine(line) || isStreetAddress(line)) {
                     return false;
                 }
-                if (line === address || line.includes("@") || /\d{3}[-.\s)]*\d{3}[-.\s]*\d{4}/.test(line)) {
+                if (/\d{3}[-.\s)]*\d{3}[-.\s]*\d{4}/.test(line)) {
                     return false;
                 }
                 return /[A-Za-z]/.test(line);
             }) || "";
+        }
+
+        function findWorkCompleted(lines, phone, address) {
+            return lines.find((line) => {
+                if (phone && line.includes(phone)) {
+                    return false;
+                }
+                if (line === address || isStreetAddress(line) || isIgnoredCalendarLine(line)) {
+                    return false;
+                }
+                return /[A-Za-z]/.test(line);
+            }) || "";
+        }
+
+        function isIgnoredCalendarLine(line) {
+            return (
+                /^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i.test(line)
+                || /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b.+\b(am|pm)\b/i.test(line)
+                || /^[-\u2013\u2014]\s*(morning|afternoon|evening)?\s*appointment\b/i.test(line)
+                || /^(entered by|confirmed|location|view map|guests|when|where|calendar)\b/i.test(line)
+            );
         }
 
         function parseJobDetails(text) {
@@ -235,18 +247,13 @@
                 .filter(Boolean);
             const compactText = lines.join("\n");
             const phone = (compactText.match(/(?:\+?1[-.\s]*)?(?:\(?\d{3}\)?[-.\s]*)\d{3}[-.\s]*\d{4}/) || [""])[0];
-            const email = (compactText.match(/[\w.+-]+@[\w.-]+\.\w+/) || [""])[0];
             const address = findAddress(lines);
 
             return {
-                customer: findCustomer(lines, phone, email, address),
-                service_date: findDate(compactText) || calendarDate.value,
-                address: address,
-                technician: findLabeledLine(lines, ["tech", "technician"]),
+                customer: findCustomer(lines, phone),
                 phone: phone,
-                email: email,
-                equipment_model: findLabeledLine(lines, ["model", "equipment model", "equipment model number"]),
-                equipment_serial: findLabeledLine(lines, ["serial", "equipment serial", "equipment serial number"]),
+                work_completed: findWorkCompleted(lines, phone, address),
+                address: address,
             };
         }
 
