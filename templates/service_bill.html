@@ -111,9 +111,6 @@
                 {% endfor %}
                 <button type="submit">Download PDF</button>
             </form>
-            {% if result.email %}
-            <a class="button-link" href="{{ customer_mailto_link }}">Email Customer</a>
-            {% endif %}
             <a class="button-link" href="{{ service_payment_url }}" {% if service_payment_url != "#" %}target="_blank" rel="noopener noreferrer"{% endif %}>Pay Now</a>
             <form method="POST" action="{{ url_for('send_service_bill_email') }}">
                 {% for key, value in result.items() %}
