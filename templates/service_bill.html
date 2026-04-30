@@ -27,7 +27,11 @@
             <div class="print-block">
                 <h4>Customer Details</h4>
                 <p><strong>Name:</strong> {{ result.customer }}</p>
-                <p><strong>Address:</strong> {{ result.address or "Not entered" }}</p>
+                {% set address_parts = (result.address or "").split(",", 1) %}
+                <p><strong>Address:</strong> {{ address_parts[0] if result.address else "Not entered" }}</p>
+                {% if address_parts|length > 1 %}
+                <p style="padding-left:68px;">{{ address_parts[1].strip() }}</p>
+                {% endif %}
                 <p><strong>Email:</strong> {{ result.email or "Not entered" }}</p>
             </div>
             <div class="print-block">
