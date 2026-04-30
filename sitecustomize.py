@@ -44,24 +44,48 @@ smtplib.SMTP._get_socket = _smtp_get_ipv4_socket
 
 if Canvas is not None:
     _reportlab_draw_string = Canvas.drawString
+    _reportlab_draw_right_string = Canvas.drawRightString
+    _reportlab_begin_text = Canvas.beginText
+    _reportlab_show_page = Canvas.showPage
+
+    def _split_service_address(address):
+        parts = [part.strip() for part in address.split(",") if part.strip()]
+        if len(parts) >= 2:
+            return parts[0], ", ".join(parts[1:])
+        return address.strip(), ""
+
+    def _shift_after_service_address(self, y):
+        shift = getattr(self, "_bv_service_address_shift", 0)
+        start_y = getattr(self, "_bv_service_address_start_y", None)
+        if shift and start_y is not None and y < start_y:
+            return y - shift
+        return y
 
     def _draw_service_address_safely(self, x, y, text, *args, **kwargs):
         if isinstance(text, str) and text.startswith("Service Address:") and x <= 60:
-            font_name = getattr(self, "_fontname", "Helvetica")
-            original_size = getattr(self, "_fontsize", 10)
-            font_size = original_size
-            max_width = 245
+            street, city_line = _split_service_address(text.split(":", 1)[1])
+            _reportlab_draw_string(self, x, y, f"Service Address: {street}", *args, **kwargs)
+            if city_line:
+                _reportlab_draw_string(self, x + 82, y - 11, city_line, *args, **kwargs)
+                self._bv_service_address_shift = max(getattr(self, "_bv_service_address_shift", 0), 11)
+                self._bv_service_address_start_y = y
+            return None
 
-            while font_size > 6.5 and self.stringWidth(text, font_name, font_size) > max_width:
-                font_size -= 0.5
+        return _reportlab_draw_string(self, x, _shift_after_service_address(self, y), text, *args, **kwargs)
 
-            if font_size != original_size:
-                self.setFont(font_name, font_size)
-                try:
-                    return _reportlab_draw_string(self, x, y, text, *args, **kwargs)
-                finally:
-                    self.setFont(font_name, original_size)
+    def _draw_right_string_with_shift(self, x, y, text, *args, **kwargs):
+        return _reportlab_draw_right_string(self, x, _shift_after_service_address(self, y), text, *args, **kwargs)
 
-        return _reportlab_draw_string(self, x, y, text, *args, **kwargs)
+    def _begin_text_with_shift(self, x=0, y=0, direction=None):
+        return _reportlab_begin_text(self, x, _shift_after_service_address(self, y), direction=direction)
+
+    def _show_page_and_reset_shift(self):
+        if hasattr(self, "_bv_service_address_shift"):
+            self._bv_service_address_shift = 0
+            self._bv_service_address_start_y = None
+        return _reportlab_show_page(self)
 
     Canvas.drawString = _draw_service_address_safely
+    Canvas.drawRightString = _draw_right_string_with_shift
+    Canvas.beginText = _begin_text_with_shift
+    Canvas.showPage = _show_page_and_reset_shift
