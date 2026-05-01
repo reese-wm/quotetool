@@ -12,18 +12,31 @@
 <div class="form-layout">
     <div class="form-stack">
         <section class="form-section">
-            <h3>Paste Job Details</h3>
-            <p class="section-hint">Open the schedule, copy the job details, then paste them here to fill customer name, phone, work completed, and service address.</p>
+            <h3>Scheduled Job Lookup</h3>
+            <p class="section-hint">Choose a job date, then pick one of the scheduled jobs to fill customer name, phone, work completed, and service address.</p>
 
             <div class="form-grid" style="margin-bottom:14px;">
                 <div>
                     <label for="calendar_date">Job Date</label>
                     <input id="calendar_date" name="calendar_date" type="date" value="{{ calendar_date }}">
                 </div>
+                <div>
+                    <label for="calendar_job_select">Scheduled Job</label>
+                    <select id="calendar_job_select" disabled>
+                        <option value="">Loading scheduled jobs...</option>
+                    </select>
+                </div>
                 <div style="display:flex; align-items:flex-end;">
                     <a id="google_calendar_link" class="button-link" href="https://calendar.google.com/calendar/u/0/r/day" target="_blank" rel="noopener noreferrer">Open Google Calendar</a>
                 </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button id="reload_calendar_jobs" type="button">Reload Jobs</button>
+                </div>
             </div>
+            <p id="calendar_job_status" class="muted-note" style="margin-top:10px;">{{ calendar_status_message }}</p>
+
+            <h3 style="margin-top:22px;">Paste Job Details</h3>
+            <p class="section-hint">Or paste copied calendar details here to fill the same customer fields manually.</p>
 
             <div class="form-grid single">
                 <div>
@@ -147,9 +160,13 @@
     (function () {
         const calendarDate = document.getElementById("calendar_date");
         const calendarLink = document.getElementById("google_calendar_link");
+        const calendarJobSelect = document.getElementById("calendar_job_select");
+        const calendarJobStatus = document.getElementById("calendar_job_status");
+        const reloadCalendarJobs = document.getElementById("reload_calendar_jobs");
         const pasteBox = document.getElementById("job_details_paste");
         const fillButton = document.getElementById("fill_job_details");
         const status = document.getElementById("job_details_status");
+        let calendarJobs = [];
 
         function field(id) {
             return document.getElementById(id);
@@ -173,6 +190,109 @@
 
             const parts = value.split("-");
             calendarLink.href = `https://calendar.google.com/calendar/u/0/r/day/${Number(parts[0])}/${Number(parts[1])}/${Number(parts[2])}`;
+        }
+
+        function setJobSelectMessage(message, disabled = true) {
+            calendarJobSelect.innerHTML = "";
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = message;
+            calendarJobSelect.appendChild(option);
+            calendarJobSelect.disabled = disabled;
+        }
+
+        function buildJobLabel(job) {
+            const time = job.time_label ? `${job.time_label} - ` : "";
+            return `${time}${job.summary || job.customer || "Untitled job"}`;
+        }
+
+        function fillFromCalendarJob(job) {
+            if (!job) {
+                return;
+            }
+
+            const details = {
+                customer: job.customer || "",
+                service_date: job.service_date || calendarDate.value,
+                phone: job.phone || "",
+                email: job.email || "",
+                address: job.address || "",
+                work_completed: job.work_completed || "",
+            };
+
+            const filled = Object.entries(details)
+                .filter(([id, value]) => setField(id, value))
+                .map(([id]) => id.replace("_", " "));
+
+            calendarJobStatus.textContent = filled.length
+                ? `Filled ${filled.length} field${filled.length === 1 ? "" : "s"} from ${job.summary || "the selected job"}.`
+                : "That job did not have details I could copy into the form.";
+        }
+
+        async function loadCalendarJobs() {
+            const value = calendarDate.value;
+            calendarJobs = [];
+            setField("service_date", value);
+
+            if (!value) {
+                setJobSelectMessage("Choose a job date first.");
+                calendarJobStatus.textContent = "";
+                return;
+            }
+
+            setJobSelectMessage("Loading scheduled jobs...");
+            calendarJobStatus.textContent = "";
+
+            try {
+                const jobsUrl = `/service-quote/calendar-jobs?calendar_date=${encodeURIComponent(value)}&_=${Date.now()}`;
+                const response = await fetch(jobsUrl, {
+                    headers: {
+                        "Accept": "application/json",
+                    },
+                    cache: "no-store",
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    setJobSelectMessage("Calendar unavailable.");
+                    calendarJobStatus.textContent = `Calendar request failed with HTTP ${response.status}: ${text.slice(0, 180)}`;
+                    return;
+                }
+
+                const payload = await response.json();
+
+                if (!payload.ready) {
+                    setJobSelectMessage("Calendar unavailable.");
+                    calendarJobStatus.textContent = payload.message || "Calendar jobs could not be loaded.";
+                    return;
+                }
+
+                calendarJobs = payload.jobs || [];
+                if (!calendarJobs.length) {
+                    setJobSelectMessage("No jobs found for this date.");
+                    calendarJobStatus.textContent = "No scheduled jobs were found for the selected date.";
+                    return;
+                }
+
+                calendarJobSelect.innerHTML = "";
+                const placeholder = document.createElement("option");
+                placeholder.value = "";
+                placeholder.textContent = "Select a scheduled job";
+                calendarJobSelect.appendChild(placeholder);
+
+                calendarJobs.forEach((job, index) => {
+                    const option = document.createElement("option");
+                    option.value = String(index);
+                    option.textContent = buildJobLabel(job);
+                    calendarJobSelect.appendChild(option);
+                });
+
+                calendarJobSelect.disabled = false;
+                calendarJobStatus.textContent = `Loaded ${calendarJobs.length} job${calendarJobs.length === 1 ? "" : "s"} for ${value}.`;
+            } catch (error) {
+                setJobSelectMessage("Calendar unavailable.");
+                calendarJobStatus.textContent = `Calendar jobs could not be loaded from the local app: ${error.message}`;
+            }
         }
 
         function findAddress(lines) {
@@ -275,7 +395,18 @@
         }
 
         updateCalendarLink();
-        calendarDate.addEventListener("change", updateCalendarLink);
+        loadCalendarJobs();
+        calendarDate.addEventListener("change", function () {
+            updateCalendarLink();
+            loadCalendarJobs();
+        });
+        reloadCalendarJobs.addEventListener("click", loadCalendarJobs);
+        calendarJobSelect.addEventListener("change", function () {
+            if (!calendarJobSelect.value) {
+                return;
+            }
+            fillFromCalendarJob(calendarJobs[Number(calendarJobSelect.value)]);
+        });
         fillButton.addEventListener("click", fillJobDetails);
     })();
 </script>
