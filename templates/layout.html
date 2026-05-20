@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#18324a">
+    <meta name="theme-color" content="#00412f">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="BV Tools">
@@ -14,16 +14,19 @@
     <title>{% block title %}Big Valley Tools{% endblock %}</title>
     <style>
         :root {
-            --navy: #18324a;
-            --blue: #24567a;
-            --teal: #3c7a89;
-            --sand: #f5efe3;
-            --ink: #1f2933;
-            --muted: #5f6c7b;
+            --forest: #00412f;
+            --deep-forest: #002f23;
+            --green: #096a45;
+            --gold: #d9a320;
+            --gold-dark: #9f7410;
+            --sky: #dce8ee;
+            --cream: #f7f1e4;
             --paper: #ffffff;
-            --line: #d8e0e8;
-            --shadow: 0 20px 45px rgba(14, 33, 52, 0.12);
-            --radius: 22px;
+            --ink: #1e2a25;
+            --muted: #5f6962;
+            --line: #d9ded6;
+            --shadow: 0 18px 34px rgba(0, 37, 27, 0.14);
+            --radius: 8px;
         }
 
         * {
@@ -35,8 +38,10 @@
             font-family: "Aptos", "Trebuchet MS", "Segoe UI", sans-serif;
             color: var(--ink);
             background:
-                radial-gradient(circle at top left, rgba(60, 122, 137, 0.12), transparent 32%),
-                linear-gradient(180deg, #f9fbfc 0%, #edf2f6 100%);
+                linear-gradient(180deg, rgba(247, 241, 228, 0.8), rgba(220, 232, 238, 0.72)),
+                url("{{ url_for('static', filename='header.png') }}") center top / min(980px, 100vw) auto no-repeat,
+                #edf3f1;
+            min-height: 100vh;
         }
 
         a {
@@ -47,7 +52,7 @@
         .site-shell {
             width: min(1120px, calc(100% - 32px));
             margin: 0 auto;
-            padding: 20px 0 48px;
+            padding: 18px 0 48px;
         }
 
         .topbar {
@@ -55,117 +60,158 @@
             align-items: center;
             justify-content: space-between;
             gap: 16px;
-            padding: 14px 18px;
+            padding: 12px 14px;
             margin-bottom: 24px;
-            background: rgba(255, 255, 255, 0.78);
-            border: 1px solid rgba(255, 255, 255, 0.65);
-            border-radius: 18px;
-            box-shadow: 0 12px 35px rgba(18, 41, 64, 0.08);
-            backdrop-filter: blur(12px);
+            background: rgba(0, 65, 47, 0.92);
+            border: 1px solid rgba(217, 163, 32, 0.45);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(8px);
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             min-width: 0;
         }
 
         .brand img {
-            height: 60px;
+            height: 54px;
             width: auto;
             object-fit: contain;
+            background: rgba(255, 255, 255, 0.94);
+            border-radius: 6px;
+            padding: 4px 7px;
         }
 
         .brand-copy h1 {
             margin: 0;
             font-size: clamp(1.1rem, 2vw, 1.45rem);
-            color: var(--navy);
+            color: #fff7da;
         }
 
         .brand-copy p {
             margin: 4px 0 0;
-            color: var(--muted);
+            color: rgba(255, 255, 255, 0.78);
             font-size: 0.92rem;
+        }
+
+        .brand-badge {
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            width: 74px;
+            height: 74px;
+            margin-left: auto;
+            border: 3px solid var(--gold);
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 34%, #155b3e 0, var(--deep-forest) 72%);
+            color: #f8d56f;
+            text-align: center;
+            box-shadow: inset 0 0 0 2px rgba(255, 244, 181, 0.22), 0 8px 18px rgba(0, 0, 0, 0.18);
+        }
+
+        .brand-badge strong {
+            display: block;
+            font-size: 1.8rem;
+            line-height: 0.9;
+        }
+
+        .brand-badge span {
+            display: block;
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
 
         .nav-links {
             display: flex;
             flex-wrap: wrap;
             justify-content: flex-end;
-            gap: 10px;
+            gap: 8px;
         }
 
         .nav-links a {
-            padding: 10px 14px;
-            border-radius: 999px;
+            padding: 10px 12px;
+            border-radius: 6px;
             font-size: 0.95rem;
-            color: var(--navy);
-            background: #eef4f8;
-            border: 1px solid #dde7ef;
+            color: #fff7da;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 235, 165, 0.2);
             transition: transform 0.18s ease, background 0.18s ease;
         }
 
         .nav-links a:hover {
             transform: translateY(-1px);
-            background: #e1edf5;
+            background: rgba(217, 163, 32, 0.22);
         }
 
         .page-card {
             background: var(--paper);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            border: 1px solid rgba(24, 50, 74, 0.06);
+            border: 1px solid rgba(0, 65, 47, 0.1);
             padding: 24px;
         }
 
         .hero {
-            padding: 34px;
-            border-radius: 28px;
+            padding: clamp(24px, 4vw, 42px);
+            border-radius: var(--radius);
             background:
-                linear-gradient(135deg, rgba(24, 50, 74, 0.96), rgba(36, 86, 122, 0.88)),
-                var(--navy);
+                linear-gradient(90deg, rgba(0, 47, 35, 0.9) 0%, rgba(0, 65, 47, 0.82) 46%, rgba(247, 241, 228, 0.5) 100%),
+                url("{{ url_for('static', filename='header.png') }}") center / cover no-repeat,
+                var(--forest);
             color: white;
             box-shadow: var(--shadow);
             overflow: hidden;
             position: relative;
+            border: 1px solid rgba(217, 163, 32, 0.55);
+            min-height: 260px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .hero::after {
             content: "";
             position: absolute;
-            right: -70px;
-            top: -40px;
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.08);
+            inset: auto 0 0 0;
+            height: 8px;
+            background: linear-gradient(90deg, var(--gold), #ffe18d, var(--gold-dark));
         }
 
         .eyebrow {
             display: inline-block;
-            padding: 7px 12px;
+            width: fit-content;
+            padding: 7px 10px;
             margin-bottom: 14px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.14);
-            letter-spacing: 0.08em;
+            border-radius: 5px;
+            background: rgba(217, 163, 32, 0.92);
+            color: #1d2116;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             font-size: 0.78rem;
+            font-weight: 800;
         }
 
         .hero h2 {
             margin: 0 0 12px;
-            font-size: clamp(2rem, 4vw, 3.2rem);
+            font-size: clamp(1.85rem, 4vw, 3rem);
             line-height: 1.05;
             max-width: 700px;
+            color: #fff8df;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.32);
         }
 
         .hero p {
             margin: 0;
             max-width: 720px;
-            color: rgba(255, 255, 255, 0.85);
+            color: rgba(255, 255, 255, 0.9);
             font-size: 1.02rem;
             line-height: 1.6;
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.26);
         }
 
         .tool-grid,
@@ -180,31 +226,32 @@
             display: flex;
             flex-direction: column;
             gap: 14px;
-            padding: 24px;
-            border-radius: 24px;
+            padding: 22px;
+            border-radius: var(--radius);
             background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 246, 250, 0.98));
-            border: 1px solid #dde7ef;
-            box-shadow: 0 18px 30px rgba(16, 32, 51, 0.08);
+                linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 246, 238, 0.98));
+            border: 1px solid rgba(0, 65, 47, 0.14);
+            border-top: 4px solid var(--gold);
+            box-shadow: 0 14px 26px rgba(0, 47, 35, 0.1);
             min-height: 260px;
         }
 
         .tool-card .badge {
             width: fit-content;
-            padding: 8px 12px;
-            border-radius: 999px;
+            padding: 7px 10px;
+            border-radius: 5px;
             font-weight: 700;
             font-size: 0.8rem;
             letter-spacing: 0.06em;
             text-transform: uppercase;
             color: white;
-            background: var(--blue);
+            background: var(--forest);
         }
 
         .tool-card h3 {
             margin: 0;
             font-size: 1.4rem;
-            color: var(--navy);
+            color: var(--forest);
         }
 
         .tool-card p {
@@ -231,21 +278,21 @@
             min-width: 160px;
             padding: 12px 18px;
             border: none;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #204d70, #2d7180);
+            border-radius: 6px;
+            background: linear-gradient(180deg, #0d6c49, var(--forest));
             color: white;
             font-size: 0.98rem;
             font-weight: 700;
             cursor: pointer;
             transition: transform 0.18s ease, box-shadow 0.18s ease;
-            box-shadow: 0 12px 24px rgba(32, 77, 112, 0.22);
+            box-shadow: 0 10px 20px rgba(0, 65, 47, 0.22);
         }
 
         .tool-card .cta:hover,
         button:hover,
         .button-link:hover {
             transform: translateY(-1px);
-            box-shadow: 0 14px 28px rgba(32, 77, 112, 0.26);
+            box-shadow: 0 12px 24px rgba(0, 65, 47, 0.28);
         }
 
         .form-layout {
@@ -261,16 +308,19 @@
         }
 
         .form-section {
-            background: linear-gradient(180deg, #ffffff, #f8fbfd);
+            background: rgba(255, 255, 255, 0.96);
             border: 1px solid var(--line);
-            border-radius: 20px;
+            border-radius: var(--radius);
             padding: 20px;
+            box-shadow: 0 10px 22px rgba(0, 47, 35, 0.07);
         }
 
         .form-section h3 {
             margin: 0 0 14px;
-            color: var(--navy);
+            color: var(--forest);
             font-size: 1.1rem;
+            border-bottom: 2px solid rgba(217, 163, 32, 0.38);
+            padding-bottom: 8px;
         }
 
         .section-hint,
@@ -293,7 +343,7 @@
         label {
             display: block;
             font-weight: 700;
-            color: var(--navy);
+            color: var(--deep-forest);
             margin-bottom: 6px;
         }
 
@@ -302,9 +352,9 @@
         textarea {
             width: 100%;
             padding: 12px 14px;
-            border: 1px solid #cad7e2;
-            border-radius: 14px;
-            background: #fff;
+            border: 1px solid #cfd8cd;
+            border-radius: 6px;
+            background: #fffdf8;
             color: var(--ink);
             font: inherit;
         }
@@ -317,22 +367,25 @@
         input:focus,
         select:focus,
         textarea:focus {
-            outline: 2px solid rgba(45, 113, 128, 0.2);
-            border-color: var(--teal);
+            outline: 3px solid rgba(217, 163, 32, 0.24);
+            border-color: var(--green);
         }
 
         .sidebar-card,
         .result-card {
-            background: linear-gradient(180deg, #fffdf8, #f5efe3);
-            border: 1px solid #eadfca;
-            border-radius: 20px;
+            background:
+                linear-gradient(180deg, rgba(255, 253, 248, 0.97), rgba(247, 241, 228, 0.97));
+            border: 1px solid #dccb9d;
+            border-top: 4px solid var(--gold);
+            border-radius: var(--radius);
             padding: 20px;
+            box-shadow: 0 12px 24px rgba(91, 71, 23, 0.08);
         }
 
         .sidebar-card h3,
         .result-card h3 {
             margin-top: 0;
-            color: var(--navy);
+            color: var(--forest);
         }
 
         .sidebar-card ul {
@@ -343,21 +396,21 @@
 
         .summary-tile {
             padding: 20px;
-            border-radius: 18px;
-            background: linear-gradient(180deg, #fff, #f1f6fa);
+            border-radius: var(--radius);
+            background: #fffdf8;
             border: 1px solid var(--line);
         }
 
         .summary-tile h4 {
             margin: 0 0 8px;
-            color: var(--navy);
+            color: var(--forest);
             font-size: 1rem;
         }
 
         .money {
             font-size: 1.7rem;
             font-weight: 700;
-            color: var(--navy);
+            color: var(--green);
         }
 
         .print-shell {
@@ -367,7 +420,7 @@
 
         .print-card {
             background: white;
-            border-radius: 24px;
+            border-radius: var(--radius);
             box-shadow: var(--shadow);
             padding: 30px;
             border: 1px solid var(--line);
@@ -383,7 +436,7 @@
 
         .print-title h2 {
             margin: 0;
-            color: var(--navy);
+            color: var(--forest);
             font-size: 2rem;
         }
 
@@ -407,14 +460,14 @@
 
         .print-block {
             padding: 18px;
-            border-radius: 18px;
-            background: #f8fbfd;
+            border-radius: var(--radius);
+            background: #fffdf8;
             border: 1px solid var(--line);
         }
 
         .print-block h4 {
             margin: 0 0 10px;
-            color: var(--navy);
+            color: var(--forest);
         }
 
         table {
@@ -432,7 +485,7 @@
         }
 
         th {
-            color: var(--navy);
+            color: var(--forest);
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.04em;
@@ -460,7 +513,7 @@
         .totals-row.final {
             font-size: 1.15rem;
             font-weight: 700;
-            color: var(--navy);
+            color: var(--forest);
         }
 
         .action-row {
@@ -504,7 +557,6 @@
             .page-card,
             .print-card {
                 padding: 20px;
-                border-radius: 20px;
             }
 
             .form-grid {
@@ -513,6 +565,15 @@
 
             .brand img {
                 height: 48px;
+            }
+
+            .brand-badge {
+                width: 62px;
+                height: 62px;
+            }
+
+            .brand-badge strong {
+                font-size: 1.45rem;
             }
 
             .nav-links {
@@ -559,6 +620,11 @@
                     <h1>Big Valley Quote Suite</h1>
                     <p>Install quotes, service bills, and purchase orders from one place.</p>
                 </div>
+            </div>
+            <div class="brand-badge" aria-label="Celebrating 40 years, 1986 to 2026">
+                <span>Celebrating</span>
+                <strong>40</strong>
+                <span>Years</span>
             </div>
 
             <div class="nav-links">
