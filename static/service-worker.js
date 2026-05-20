@@ -1,4 +1,4 @@
-const CACHE_NAME = "big-valley-tools-v1";
+const CACHE_NAME = "big-valley-tools-v5";
 const APP_SHELL = [
     "/",
     "/install-quote",
@@ -7,6 +7,8 @@ const APP_SHELL = [
     "/offline",
     "/manifest.webmanifest",
     "/static/logo.png",
+    "/static/header.png",
+    "/static/parts-pricing.json",
     "/app-icon/192.png",
     "/app-icon/512.png",
 ];
