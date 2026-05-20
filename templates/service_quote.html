@@ -100,6 +100,26 @@
                         <label for="materials_used">Materials / Parts Notes</label>
                         <textarea id="materials_used" name="materials_used" placeholder="List parts used, special materials, or anything the customer should see on the bill." style="text-transform:uppercase;">{{ form_data.get('materials_used', '') }}</textarea>
                     </div>
+                    <div class="parts-picker">
+                        <h4>Common Parts Price List</h4>
+                        <div class="parts-picker-grid">
+                            <div>
+                                <label for="part_price_select">Part / Material</label>
+                                <select id="part_price_select" disabled>
+                                    <option value="">Loading parts price list...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="part_quantity">Qty</label>
+                                <input id="part_quantity" type="number" min="0.01" step="0.01" value="1">
+                            </div>
+                        </div>
+                        <div class="parts-picker-actions">
+                            <p id="part_price_preview" class="parts-price-preview">Choose a common part to see the price.</p>
+                            <button id="add_common_part" type="button">Add Part</button>
+                        </div>
+                        <p id="parts_price_status" class="muted-note" style="margin-top:10px;"></p>
+                    </div>
                 </div>
             </section>
 
@@ -166,7 +186,13 @@
         const pasteBox = document.getElementById("job_details_paste");
         const fillButton = document.getElementById("fill_job_details");
         const status = document.getElementById("job_details_status");
+        const partPriceSelect = document.getElementById("part_price_select");
+        const partQuantity = document.getElementById("part_quantity");
+        const partPricePreview = document.getElementById("part_price_preview");
+        const addCommonPart = document.getElementById("add_common_part");
+        const partsPriceStatus = document.getElementById("parts_price_status");
         let calendarJobs = [];
+        let partsPriceItems = [];
 
         function field(id) {
             return document.getElementById(id);
@@ -179,6 +205,125 @@
                 return true;
             }
             return false;
+        }
+
+        function parseCurrencyInput(value) {
+            const parsed = Number.parseFloat(String(value || "").replace(/[$,]/g, ""));
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat("en-CA", {
+                style: "currency",
+                currency: "CAD",
+            }).format(value);
+        }
+
+        function formatQuantity(value) {
+            return Number.isInteger(value) ? String(value) : String(value).replace(/\.?0+$/, "");
+        }
+
+        function setPartSelectMessage(message, disabled = true) {
+            partPriceSelect.innerHTML = "";
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = message;
+            partPriceSelect.appendChild(option);
+            partPriceSelect.disabled = disabled;
+        }
+
+        function selectedPartItem() {
+            if (!partPriceSelect.value) {
+                return null;
+            }
+            return partsPriceItems[Number(partPriceSelect.value)] || null;
+        }
+
+        function updatePartPreview() {
+            const item = selectedPartItem();
+            if (!item) {
+                partPricePreview.textContent = "Choose a common part to see the price.";
+                return;
+            }
+
+            const quantity = Math.max(parseCurrencyInput(partQuantity.value), 0);
+            const lineTotal = item.unitPrice * quantity;
+            partPricePreview.textContent = `${item.name}: ${item.priceLabel} x ${formatQuantity(quantity || 0)} = ${formatCurrency(lineTotal)}`;
+        }
+
+        async function loadPartsPriceList() {
+            setPartSelectMessage("Loading parts price list...");
+
+            try {
+                const response = await fetch("{{ url_for('static', filename='parts-pricing.json') }}");
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                partsPriceItems = await response.json();
+                partPriceSelect.innerHTML = "";
+
+                const placeholder = document.createElement("option");
+                placeholder.value = "";
+                placeholder.textContent = "Select a common part";
+                partPriceSelect.appendChild(placeholder);
+
+                let currentGroup = null;
+                let currentCategory = "";
+                partsPriceItems.forEach((item, index) => {
+                    const category = item.category || "General Parts";
+                    if (category !== currentCategory) {
+                        currentCategory = category;
+                        currentGroup = document.createElement("optgroup");
+                        currentGroup.label = category;
+                        partPriceSelect.appendChild(currentGroup);
+                    }
+
+                    const option = document.createElement("option");
+                    option.value = String(index);
+                    option.textContent = `${item.name} - ${item.priceLabel}`;
+                    currentGroup.appendChild(option);
+                });
+
+                partPriceSelect.disabled = false;
+                const categoryCount = new Set(partsPriceItems.map((item) => item.category || "General Parts")).size;
+                partsPriceStatus.textContent = `Loaded ${partsPriceItems.length} common parts in ${categoryCount} categories.`;
+                updatePartPreview();
+            } catch (error) {
+                setPartSelectMessage("Parts price list unavailable.");
+                partsPriceStatus.textContent = `Parts price list could not be loaded: ${error.message}`;
+            }
+        }
+
+        function addSelectedPart() {
+            const item = selectedPartItem();
+            if (!item) {
+                partsPriceStatus.textContent = "Choose a common part first.";
+                return;
+            }
+
+            const quantity = Math.max(parseCurrencyInput(partQuantity.value), 0);
+            if (!quantity) {
+                partsPriceStatus.textContent = "Enter a quantity greater than zero.";
+                return;
+            }
+
+            const lineTotal = item.unitPrice * quantity;
+            const materialsInput = field("materials_used");
+            const partsInput = field("parts");
+            const line = `${formatQuantity(quantity)} x ${item.name} @ ${item.priceLabel} = ${formatCurrency(lineTotal)}`;
+
+            if (materialsInput) {
+                const existing = materialsInput.value.trim();
+                materialsInput.value = existing ? `${existing}\n${line}` : line;
+            }
+
+            if (partsInput) {
+                const currentTotal = parseCurrencyInput(partsInput.value);
+                partsInput.value = (currentTotal + lineTotal).toFixed(2);
+            }
+
+            partsPriceStatus.textContent = `Added ${item.name} and updated the Parts charge.`;
         }
 
         function updateCalendarLink() {
@@ -396,6 +541,7 @@
 
         updateCalendarLink();
         loadCalendarJobs();
+        loadPartsPriceList();
         calendarDate.addEventListener("change", function () {
             updateCalendarLink();
             loadCalendarJobs();
@@ -408,6 +554,9 @@
             fillFromCalendarJob(calendarJobs[Number(calendarJobSelect.value)]);
         });
         fillButton.addEventListener("click", fillJobDetails);
+        partPriceSelect.addEventListener("change", updatePartPreview);
+        partQuantity.addEventListener("input", updatePartPreview);
+        addCommonPart.addEventListener("click", addSelectedPart);
     })();
 </script>
 {% endblock %}
