@@ -112,11 +112,14 @@
                 <button type="submit">Download PDF</button>
             </form>
             <a class="button-link" href="{{ service_payment_url }}" {% if service_payment_url != "#" %}target="_blank" rel="noopener noreferrer"{% endif %}>Pay Now</a>
-            <form method="POST" action="{{ url_for('send_service_bill_email') }}">
+            <form class="photo-send-form" method="POST" action="{{ url_for('send_service_bill_email') }}" enctype="multipart/form-data">
                 {% for key, value in result.items() %}
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
                 {% endfor %}
                 <input type="hidden" name="send_target" value="office">
+                <label class="photo-upload-label" for="service-office-photos">Upload Photos</label>
+                <input class="photo-upload-input" id="service-office-photos" type="file" name="photos" accept="image/*" multiple>
+                <span class="photo-file-count" data-photo-count-for="service-office-photos">No photos selected</span>
                 <button type="submit">Send to Office</button>
             </form>
             <button type="button" onclick="window.print()">Print Bill</button>
