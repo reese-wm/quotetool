@@ -97,11 +97,14 @@
             {% if result.email %}
             <a class="button-link" href="{{ customer_mailto_link }}">Email Customer</a>
             {% endif %}
-            <form method="POST" action="{{ url_for('send_install_quote_email') }}">
+            <form class="photo-send-form" method="POST" action="{{ url_for('send_install_quote_email') }}" enctype="multipart/form-data">
                 {% for key, value in result.items() %}
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
                 {% endfor %}
                 <input type="hidden" name="send_target" value="office">
+                <label class="photo-upload-label" for="install-office-photos">Upload Photos</label>
+                <input class="photo-upload-input" id="install-office-photos" type="file" name="photos" accept="image/*" multiple>
+                <span class="photo-file-count" data-photo-count-for="install-office-photos">No photos selected</span>
                 <button type="submit">Send to Office</button>
             </form>
             <button type="button" onclick="window.print()">Print Quote</button>
