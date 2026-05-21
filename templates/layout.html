@@ -269,13 +269,15 @@
 
         .tool-card .cta,
         button,
-        .button-link {
+        .button-link,
+        .photo-upload-label {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             width: fit-content;
             min-width: 160px;
+            margin: 0;
             padding: 12px 18px;
             border: none;
             border-radius: 6px;
@@ -290,7 +292,8 @@
 
         .tool-card .cta:hover,
         button:hover,
-        .button-link:hover {
+        .button-link:hover,
+        .photo-upload-label:hover {
             transform: translateY(-1px);
             box-shadow: 0 12px 24px rgba(0, 65, 47, 0.28);
         }
@@ -523,6 +526,31 @@
             margin-top: 24px;
         }
 
+        .photo-send-form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .photo-upload-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .photo-file-count {
+            color: var(--muted);
+            font-size: 0.92rem;
+            min-width: 130px;
+        }
+
         .muted-note {
             margin-top: 18px;
             color: var(--muted);
@@ -616,7 +644,13 @@
 
             .tool-card .cta,
             button,
-            .button-link {
+            .button-link,
+            .photo-upload-label {
+                width: 100%;
+            }
+
+            .photo-send-form,
+            .photo-file-count {
                 width: 100%;
             }
 
@@ -683,6 +717,20 @@
                 navigator.serviceWorker.register("{{ url_for('service_worker') }}");
             });
         }
+
+        document.querySelectorAll(".photo-upload-input").forEach(function (input) {
+            input.addEventListener("change", function () {
+                var counter = document.querySelector("[data-photo-count-for='" + input.id + "']");
+                if (!counter) {
+                    return;
+                }
+
+                var count = input.files ? input.files.length : 0;
+                counter.textContent = count === 0
+                    ? "No photos selected"
+                    : count + " photo" + (count === 1 ? "" : "s") + " selected";
+            });
+        });
     </script>
 </body>
 </html>
